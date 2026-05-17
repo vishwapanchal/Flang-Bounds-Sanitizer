@@ -38,16 +38,22 @@ jobs:
           echo "Appending to Optimizer CMakeLists..."
           cat project/src/pass/CMakeLists.txt >> llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
           
-          echo "Copying Runtime implementation..."
-          # Support both old (flang/runtime) and new (flang-rt) LLVM structures
-          if [ -d "llvm-project/flang-rt/lib/runtime" ]; then
-            cp project/src/runtime/bounds-check.* llvm-project/flang-rt/lib/runtime/
+          echo "Finding the correct runtime directory..."
+          RUNTIME_DIR=$(find llvm-project -type d -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" | head -n 1)
+          
+          if [ -n "$RUNTIME_DIR" ]; then
+            echo "Found runtime directory at: $RUNTIME_DIR"
+            cp project/src/runtime/bounds-check.* "$RUNTIME_DIR/"
+            
             echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
-            sed -i '/add_flangrt_library(flang_rt.runtime/a \  bounds-check.cpp' llvm-project/flang-rt/lib/runtime/CMakeLists.txt
+            if [[ "$RUNTIME_DIR" == *"flang-rt"* ]]; then
+              sed -i '/add_flangrt_library(flang_rt.runtime/a \  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
+            else
+              sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
+            fi
           else
-            cp project/src/runtime/bounds-check.* llvm-project/flang/runtime/
-            echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
-            sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' llvm-project/flang/runtime/CMakeLists.txt
+            echo "Error: Could not find Flang runtime directory!"
+            exit 1
           fi
           
           echo "Applying driver integration patch..."
