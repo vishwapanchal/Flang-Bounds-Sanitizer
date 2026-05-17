@@ -79,19 +79,19 @@ jobs:
         run: |
           cd llvm-project/build
           # This step will take about 1 to 1.5 hours on GitHub Actions
-          ninja flang-new flang_rt.runtime || ninja flang-new FlangRuntime
+          ninja flang flang_rt.runtime || ninja flang FlangRuntime
           
       - name: Test Instrumentation Output
         run: |
           echo "Running Flang to verify HLFIR generation..."
           cd llvm-project/build
           # Test without -fcheck=bounds since we injected it unconditionally
-          bin/flang-new -fc1 -emit-hlfir ../../project/src/tests/bounds_check.f90 -o bounds_check.hlfir
+          bin/flang -fc1 -emit-hlfir ../../project/src/tests/bounds_check.f90 -o bounds_check.hlfir
           cat bounds_check.hlfir | grep "_FortranABoundsCheck"
           
-      - name: Upload flang-new Artifact
+      - name: Upload flang Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flang-new-linux
-          path: llvm-project/build/bin/flang-new
+          name: flang-linux
+          path: llvm-project/build/bin/flang
           retention-days: 5
