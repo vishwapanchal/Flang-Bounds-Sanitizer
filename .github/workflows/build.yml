@@ -39,11 +39,16 @@ jobs:
           cat project/src/pass/CMakeLists.txt >> llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
           
           echo "Copying Runtime implementation..."
-          cp project/src/runtime/bounds-check.* llvm-project/flang/runtime/
-          
-          echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
-          # This inserts bounds-check.cpp into the FlangRuntime library compilation list
-          sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' llvm-project/flang/runtime/CMakeLists.txt
+          # Support both old (flang/runtime) and new (flang-rt) LLVM structures
+          if [ -d "llvm-project/flang-rt/lib/runtime" ]; then
+            cp project/src/runtime/bounds-check.* llvm-project/flang-rt/lib/runtime/
+            echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
+            sed -i '/add_flangrt_library(flang_rt.runtime/a \  bounds-check.cpp' llvm-project/flang-rt/lib/runtime/CMakeLists.txt
+          else
+            cp project/src/runtime/bounds-check.* llvm-project/flang/runtime/
+            echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
+            sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' llvm-project/flang/runtime/CMakeLists.txt
+          fi
           
           echo "Applying driver integration patch..."
           cd llvm-project
@@ -58,13 +63,14 @@ jobs:
           cmake -G Ninja ../llvm \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
+            -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang-rt" \
             -DLLVM_TARGETS_TO_BUILD="X86"
             
       - name: Build Flang
         run: |
           cd llvm-project/build
           # This step will take about 1 to 1.5 hours on GitHub Actions
-          ninja flang-new FlangRuntime
+          ninja flang-new flang_rt.runtime || ninja flang-new FlangRuntime
           
       - name: Test Instrumentation Output
         run: |
