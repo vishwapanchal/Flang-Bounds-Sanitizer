@@ -1,0 +1,18 @@
+--- flang/lib/Frontend/CompilerInvocation.cpp
++++ flang/lib/Frontend/CompilerInvocation.cpp
+@@ -100,6 +100,16 @@
+   if (args.hasArg(clang::driver::options::OPT_fcheck_EQ_bounds)) {
+     opts.BoundsCheck = true;
+   }
++
+--- flang/lib/Optimizer/Passes/Pipelines.cpp
++++ flang/lib/Optimizer/Passes/Pipelines.cpp
+@@ -200,6 +200,10 @@
+   // HLFIR construction is done. Now run the bounds check instrumentation
+   // if the user requested it via -fcheck=bounds.
+   if (options.BoundsCheck) {
+     pm.addPass(fir::createHLFIRBoundsCheckPass());
+   }
++
+   // Lower HLFIR to FIR
+   pm.addPass(hlfir::createLowerHLFIRIntrinsicsPass());

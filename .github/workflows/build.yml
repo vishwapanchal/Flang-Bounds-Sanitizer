@@ -1,0 +1,81 @@
+name: Build Flang with Bounds Checker
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows you to trigger the workflow manually from the GitHub UI
+
+jobs:
+  build-flang:
+    name: Compile LLVM/Flang
+    # Using an ubuntu runner as Linux builds for LLVM are generally faster and more stable
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Project Files
+        uses: actions/checkout@v4
+        with:
+          path: 'project'
+
+      - name: Checkout LLVM Project
+        uses: actions/checkout@v4
+        with:
+          repository: 'llvm/llvm-project'
+          path: 'llvm-project'
+          # We clone the shallowest depth to save time, but LLVM is still huge
+          fetch-depth: 1 
+          
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential
+          
+      - name: Integrate Project Files into LLVM
+        run: |
+          echo "Copying Pass implementation..."
+          cp project/src/pass/BoundsCheckInstrumentation.* llvm-project/flang/lib/Optimizer/Transforms/
+          
+          echo "Appending to Optimizer CMakeLists..."
+          cat project/src/pass/CMakeLists.txt >> llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
+          
+          echo "Copying Runtime implementation..."
+          cp project/src/runtime/bounds-check.* llvm-project/flang/runtime/
+          
+          echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
+          # This inserts bounds-check.cpp into the FlangRuntime library compilation list
+          sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' llvm-project/flang/runtime/CMakeLists.txt
+          
+          echo "Applying driver integration patch..."
+          cd llvm-project
+          git apply ../project/src/driver/FlangDriverIntegration.patch
+          
+      - name: Configure CMake
+        run: |
+          cd llvm-project
+          mkdir build
+          cd build
+          # We use Release build type to save massive amounts of disk space and compilation time
+          cmake -G Ninja ../llvm \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
+            -DLLVM_TARGETS_TO_BUILD="X86"
+            
+      - name: Build Flang
+        run: |
+          cd llvm-project/build
+          # This step will take about 1 to 1.5 hours on GitHub Actions
+          ninja flang-new FlangRuntime
+          
+      - name: Test Instrumentation Output
+        run: |
+          echo "Running Flang to verify HLFIR generation..."
+          cd llvm-project/build
+          bin/flang-new -fc1 -fcheck=bounds -emit-hlfir ../../project/src/tests/bounds_check.f90 -o bounds_check.hlfir
+          cat bounds_check.hlfir | grep "_FortranABoundsCheck"
+          
+      - name: Upload flang-new Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flang-new-linux
+          path: llvm-project/build/bin/flang-new
+          retention-days: 5
