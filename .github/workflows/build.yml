@@ -36,7 +36,9 @@ jobs:
           cp project/src/pass/BoundsCheckInstrumentation.* llvm-project/flang/lib/Optimizer/Transforms/
           
           echo "Appending to Optimizer CMakeLists..."
-          cat project/src/pass/CMakeLists.txt >> llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
+          # Instead of adding a second target, we inject our pass file into the existing FIRTransforms target
+          # to comply with LLVM's single-target-per-directory requirement.
+          sed -i '/add_flang_library(FIRTransforms/a \  BoundsCheckInstrumentation.cpp' llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
           
           echo "Finding the correct runtime directory..."
           RUNTIME_DIR=$(find llvm-project -type d -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" | head -n 1)
