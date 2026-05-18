@@ -2,97 +2,175 @@ name: Build Flang with Bounds Checker
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch: # Allows you to trigger the workflow manually from the GitHub UI
+    branches: ["main", "master"]
+  workflow_dispatch:
 
 jobs:
   build-flang:
     name: Compile LLVM/Flang
-    # Using an ubuntu runner as Linux builds for LLVM are generally faster and more stable
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout Project Files
-        uses: actions/checkout@v4
-        with:
-          path: 'project'
 
-      - name: Checkout LLVM Project
+    steps:
+      # ── 1. Check out your project files ──────────────────────────────────
+      - name: Checkout project
         uses: actions/checkout@v4
         with:
-          repository: 'llvm/llvm-project'
-          path: 'llvm-project'
-          # We clone the shallowest depth to save time, but LLVM is still huge
-          fetch-depth: 1 
-          
-      - name: Install Dependencies
+          path: project
+
+      # ── 2. Check out LLVM (shallow clone, saves ~10 min) ─────────────────
+      - name: Checkout LLVM
+        uses: actions/checkout@v4
+        with:
+          repository: llvm/llvm-project
+          path: llvm-project
+          fetch-depth: 1
+
+      # ── 3. Install build tools ───────────────────────────────────────────
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential
-          
-      - name: Integrate Project Files into LLVM
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build build-essential ccache
+
+      # ── 4. Cache: ccache object cache ───────────────────────────────────
+      #    Saves compiled .o files so unchanged LLVM files are not recompiled.
+      #    This is the single biggest speedup after the first build.
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-flang-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ccache-flang-${{ runner.os }}-
+
+      # ── 5. Cache: CMake configure output ────────────────────────────────
+      #    Skips the cmake configuration step on subsequent runs.
+      - name: Restore CMake cache
+        id: cmake-cache
+        uses: actions/cache@v4
+        with:
+          path: llvm-project/build
+          key: cmake-flang-${{ runner.os }}-${{ hashFiles('llvm-project/llvm/CMakeLists.txt', 'llvm-project/flang/CMakeLists.txt') }}
+          restore-keys: |
+            cmake-flang-${{ runner.os }}-
+
+      # ── 6. Configure ccache limits ───────────────────────────────────────
+      - name: Configure ccache
         run: |
-          echo "Copying Pass implementation..."
-          cp project/src/pass/BoundsCheckInstrumentation.* llvm-project/flang/lib/Optimizer/Transforms/
-          
-          echo "Appending to Optimizer CMakeLists..."
-          # Instead of adding a second target, we inject our pass file into the existing FIRTransforms target
-          # to comply with LLVM's single-target-per-directory requirement.
-          sed -i '/add_flang_library(FIRTransforms/a \  BoundsCheckInstrumentation.cpp' llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
-          
-          echo "Finding the correct runtime directory..."
-          RUNTIME_DIR=$(find llvm-project -type d -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" | head -n 1)
-          
-          if [ -n "$RUNTIME_DIR" ]; then
-            echo "Found runtime directory at: $RUNTIME_DIR"
-            cp project/src/runtime/bounds-check.* "$RUNTIME_DIR/"
-            
-            echo "Injecting bounds-check.cpp into Runtime CMakeLists..."
-            if [[ "$RUNTIME_DIR" == *"flang-rt"* ]]; then
-              sed -i '/add_flangrt_library(flang_rt.runtime/a \  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
-            else
-              sed -i '/add_flang_library(FlangRuntime/a \  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
-            fi
-          else
-            echo "Error: Could not find Flang runtime directory!"
+          ccache --set-config=max_size=5G
+          ccache --set-config=compression=true
+          ccache -z
+
+      # ── 7. Inject your source files into LLVM ───────────────────────────
+      - name: Integrate project files into LLVM
+        run: |
+          set -e
+
+          echo "==> Copying instrumentation pass..."
+          cp project/src/pass/BoundsCheckInstrumentation.cpp \
+             llvm-project/flang/lib/Optimizer/Transforms/
+          cp project/src/pass/BoundsCheckInstrumentation.h \
+             llvm-project/flang/include/flang/Optimizer/Transforms/ \
+             2>/dev/null || true   # header is optional if declarations are in .cpp
+
+          echo "==> Registering pass in FIRTransforms CMakeLists..."
+          # Guard against double-injection on cache restore
+          if ! grep -q "BoundsCheckInstrumentation.cpp" \
+               llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt; then
+            sed -i '/add_flang_library(FIRTransforms/a\  BoundsCheckInstrumentation.cpp' \
+              llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
+          fi
+
+          echo "==> Finding Flang runtime directory..."
+          RUNTIME_DIR=$(find llvm-project -type d \
+            \( -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" \) \
+            | head -n 1)
+
+          if [ -z "$RUNTIME_DIR" ]; then
+            echo "ERROR: Could not find Flang runtime directory"
             exit 1
           fi
-          
-          echo "Applying driver integration patch via sed to avoid fragile patch files..."
+          echo "    Found: $RUNTIME_DIR"
+
+          echo "==> Copying runtime library..."
+          cp project/src/runtime/bounds-check.cpp "$RUNTIME_DIR/"
+          cp project/src/runtime/bounds-check.h   "$RUNTIME_DIR/"
+
+          echo "==> Registering runtime in CMakeLists..."
+          if ! grep -q "bounds-check.cpp" "$RUNTIME_DIR/CMakeLists.txt"; then
+            if echo "$RUNTIME_DIR" | grep -q "flang-rt"; then
+              sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' \
+                "$RUNTIME_DIR/CMakeLists.txt"
+            else
+              sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' \
+                "$RUNTIME_DIR/CMakeLists.txt"
+            fi
+          fi
+
+          echo "==> Patching Pipelines.cpp to schedule the pass..."
           cd llvm-project
-          # Unconditionally inject the pass right before HLFIR intrinsics lowering to guarantee it runs
-          sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i \  pm.addPass(fir::createHLFIRBoundsCheckPass());' flang/lib/Optimizer/Passes/Pipelines.cpp
-          
+          # Guard against double-patching on cache restore
+          if ! grep -q "createHLFIRBoundsCheckPass" \
+               flang/lib/Optimizer/Passes/Pipelines.cpp; then
+            sed -i \
+              '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' \
+              flang/lib/Optimizer/Passes/Pipelines.cpp
+          fi
+
+      # ── 8. CMake configure (skipped if cache restored) ──────────────────
       - name: Configure CMake
+        if: steps.cmake-cache.outputs.cache-hit != 'true'
         run: |
           cd llvm-project
-          mkdir build
+          mkdir -p build
           cd build
-          # We use Release build type to save massive amounts of disk space and compilation time
           cmake -G Ninja ../llvm \
             -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
-            -DLLVM_ENABLE_RUNTIMES="compiler-rt;flang-rt" \
-            -DLLVM_TARGETS_TO_BUILD="X86"
-            
+            -DLLVM_ENABLE_PROJECTS="flang;mlir" \
+            -DLLVM_ENABLE_RUNTIMES="flang-rt" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DLLVM_CCACHE_BUILD=ON \
+            -DLLVM_OPTIMIZED_TABLEGEN=ON \
+            -DLLVM_ENABLE_ASSERTIONS=OFF
+
+      # ── 9. Build only what we need ───────────────────────────────────────
+      #    Do NOT build all of Flang every time.
+      #    FIRTransforms = your pass; flang_rt.runtime = your runtime lib.
+      #    flang-new = the driver binary for the test step.
       - name: Build Flang
         run: |
           cd llvm-project/build
-          # This step will take about 1 to 1.5 hours on GitHub Actions
-          # LLVM targets have changed multiple times, so we try the most common ones
-          ninja flang flang-rt || ninja flang FlangRuntime || ninja flang
-          
-      - name: Test Instrumentation Output
+          ninja FIRTransforms flang_rt.runtime flang-new \
+            || ninja FIRTransforms FlangRuntime flang-new \
+            || ninja flang
+
+      # ── 10. Print ccache stats (useful to verify cache is working) ───────
+      - name: ccache stats
+        run: ccache -s
+
+      # ── 11. Run your test ────────────────────────────────────────────────
+      - name: Test HLFIR instrumentation output
         run: |
-          echo "Running Flang to verify HLFIR generation..."
           cd llvm-project/build
-          # Test without -fcheck=bounds since we injected it unconditionally
-          bin/flang -fc1 -emit-hlfir ../../project/src/tests/bounds_check.f90 -o bounds_check.hlfir
-          cat bounds_check.hlfir | grep "_FortranABoundsCheck"
-          
-      - name: Upload flang Artifact
+          echo "==> Emitting HLFIR for bounds_check.f90..."
+          bin/flang-new -fc1 -emit-hlfir \
+            ../../project/src/tests/bounds_check.f90 \
+            -o bounds_check.hlfir
+
+          echo "==> Checking for _FortranABoundsCheck calls in HLFIR..."
+          if grep -q "_FortranABoundsCheck" bounds_check.hlfir; then
+            echo "PASS: bounds check calls found in HLFIR output"
+          else
+            echo "FAIL: no _FortranABoundsCheck found - pass may not have run"
+            cat bounds_check.hlfir
+            exit 1
+          fi
+
+      # ── 12. Upload the compiled driver binary ────────────────────────────
+      - name: Upload flang-new binary
         uses: actions/upload-artifact@v4
         with:
-          name: flang-linux
-          path: llvm-project/build/bin/flang
+          name: flang-new-linux-x86_64
+          path: llvm-project/build/bin/flang-new
           retention-days: 5
