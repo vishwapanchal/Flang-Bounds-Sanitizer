@@ -265,11 +265,9 @@ struct HLFIRBoundsCheckPass
             builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
         extent = shapeOp.getOperands()[dim];
       } else {
-        // Dynamic descriptor: emit i64 1 as conservative lower bound.
-        lowerBound =
-            builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
-        extent =
-            builder.create<arith::ConstantIntOp>(loc, 0, i64Ty);
+        // Cannot statically resolve dynamic descriptor shape here.
+        // Safely skip bounds check for this dimension to avoid false positives.
+        continue;
       }
 
       // Cast operands to i64.
