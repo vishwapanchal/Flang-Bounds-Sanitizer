@@ -30,6 +30,7 @@ RUN echo "==> Injecting Bounds Sanitizer into LLVM..." && \
     else \
         sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"; \
     fi && \
+    sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' /workspace/llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp && \
     sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' /workspace/llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
 
 WORKDIR /workspace/llvm-project/build

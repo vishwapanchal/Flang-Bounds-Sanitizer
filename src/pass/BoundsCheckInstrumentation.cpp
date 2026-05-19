@@ -245,7 +245,7 @@ struct HLFIRBoundsCheckPass
       Value idx = indices[dim];
 
       // DEFENSIVE QA: Ensure the index is an integer or index type to prevent compiler crash
-      if (!idx.getType().isIntOrIndex()) {
+      if (!idx.getType().isa<mlir::IntegerType, mlir::IndexType>()) {
         continue; // Gracefully skip instrumentation for unsupported index types
       }
 
@@ -263,12 +263,12 @@ struct HLFIRBoundsCheckPass
       if (shapeShiftOp) {
         auto operands = shapeShiftOp.getOperands();
         // DEFENSIVE QA: Ensure operands are valid and within array bounds
-        if ((dim * 2 + 1) >= operands.size()) continue;
+        if (static_cast<size_t>(dim * 2 + 1) >= operands.size()) continue;
         lowerBound = operands[dim * 2];
         extent     = operands[dim * 2 + 1];
       } else if (shapeOp) {
         auto operands = shapeOp.getOperands();
-        if (dim >= operands.size()) continue;
+        if (static_cast<size_t>(dim) >= operands.size()) continue;
         // Lower bound is implicitly 1 per Fortran default.
         lowerBound = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
         extent = operands[dim];
@@ -279,7 +279,7 @@ struct HLFIRBoundsCheckPass
       }
 
       // DEFENSIVE QA: Ensure bounds and extents are integers
-      if (!lowerBound.getType().isIntOrIndex() || !extent.getType().isIntOrIndex()) {
+      if (!lowerBound.getType().isa<mlir::IntegerType, mlir::IndexType>() || !extent.getType().isa<mlir::IntegerType, mlir::IndexType>()) {
         continue;
       }
 

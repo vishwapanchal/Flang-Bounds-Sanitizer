@@ -82,6 +82,8 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Patching Pipelines.cpp"
+          # Insert the header include to prevent undeclared identifier compilation errors
+          sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
           sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
           echo "::endgroup::"
 
