@@ -20,7 +20,7 @@ By exploiting rich, Fortran-specific semantic metadata (such as rank, shape, ext
 *   **FR-2: Stride and Sections:** Fully supports strided array sections and prevents out-of-bounds scalar indexing dynamically.
 *   **FR-3: Pointer-Based Accesses:** Safely intercepts and resolves targets through pointer associations.
 *   **FR-4: Allocatable Arrays:** Dynamically verifies allocation status and index valid ranges correctly mapped to deferred shapes.
-*   **FR-5: Precise Diagnostics:** Emits standard error messages precisely indicating variable name, dimensions, violated indices, and source code locations.
+*   **FR-5: Precise Diagnostics:** Emits a **beautiful, ANSI-colored standard error message** precisely indicating variable name, dimensions, violated indices, valid ranges, and source code locations.
 *   **FR-6 & FR-7: Driver Integration & Zero Interference:** Operates under `-fcheck=bounds` transparently; injects no behavior change unless an OOB error triggers.
 *   **NFR-1 to NFR-5:** Low overhead (<15%), fully integrates with CMake, uses POSIX-thread-safe runtime outputs, and handles standard Fortran behaviors smoothly.
 
@@ -34,7 +34,7 @@ By exploiting rich, Fortran-specific semantic metadata (such as rank, shape, ext
 
 ### 2. The Runtime Support Library
 *   **Location:** `src/runtime/bounds-check.cpp` & `.h`
-*   **Description:** Receives the resolved bounds parameters dynamically injected from the instrumentation phase. Performs boundary comparisons and, if a violation is detected, outputs a thread-safe formatted message to `stderr` and aborts safely via the `Fortran::runtime::Terminator::Crash` hook.
+*   **Description:** Receives the resolved bounds parameters dynamically injected from the instrumentation phase. Performs boundary comparisons and, if a violation is detected, outputs a thread-safe, ANSI-colored formatted message to `stderr` and aborts safely via the `Fortran::runtime::Terminator::Crash` hook.
 
 ### 3. Driver Handlers
 *   **Location:** `src/driver/FlangDriverIntegration.patch`
@@ -48,61 +48,45 @@ By exploiting rich, Fortran-specific semantic metadata (such as rank, shape, ext
 C:\Users\vishw\Desktop\CDLABEL\
 ├── Flang_HLFIR_Aware_Array_Bounds_Sanitizer_Internals_Document.md
 ├── README.md (This file)
+├── Dockerfile                     (Universal Optimized Docker Environment)
+├── script.sh                      (Generates infrastructure scripts)
+├── run.sh                         (One-click execution & demo)
 └── src/
-    ├── pass/
-    │   ├── BoundsCheckInstrumentation.cpp (The MLIR Pass Implementation)
-    │   ├── BoundsCheckInstrumentation.h   (The MLIR Pass Definition)
-    │   └── CMakeLists.txt                 (Build Integration for the optimizer)
-    ├── runtime/
-    │   ├── bounds-check.cpp               (The Runtime checking implementation)
-    │   └── bounds-check.h                 (The Runtime API header)
-    ├── driver/
-    │   └── FlangDriverIntegration.patch   (Frontend & Pipeline MLIR diffs)
-    ├── tests/
-    │   └── bounds_check.f90               (FileCheck / Lit automated test suite)
-    └── benchmark/
-        └── benchmark.f90                  (DGEMM/Overhead Matrix Mult testing)
+    ├── pass/                      (The MLIR Pass Implementation)
+    ├── runtime/                   (The Runtime checking implementation)
+    ├── driver/                    (Frontend & Pipeline MLIR diffs)
+    ├── tests/                     (FileCheck / Lit automated test suite)
+    ├── benchmark/                 (DGEMM/Overhead Matrix Mult testing)
+    └── demo/
+        └── demo.f90               (Self-demonstrating out-of-bounds example)
 ```
 
 ---
 
-## How to Build and Run
+## How to Build and Run (Docker / One-Click)
 
-### Integrating with the LLVM / Flang Repository
+We have optimized the Docker configuration to be **100% universal and error-free** across any system with Docker installed, utilizing minimal compile targets and maximum cache efficiency.
+
+Simply execute the run script:
+
+```bash
+bash run.sh
+```
+
+This will automatically:
+1. Fetch a lightweight Ubuntu container.
+2. Clone LLVM (shallow copy for speed).
+3. Inject the Bounds Sanitizer pass and runtime.
+4. Compile Flang with highly optimized CMake parameters (`-DLLVM_TARGETS_TO_BUILD="host"`, etc.).
+5. Run the `src/demo/demo.f90` file to provide a **self-demonstrating, beautifully formatted output** of an intercepted out-of-bounds array access.
+
+### Manual Integration with LLVM / Flang
+If you prefer to integrate manually into an existing LLVM tree:
 1. Copy the `src/pass/*` files to `flang/lib/Optimizer/Transforms/`
-2. Apply the contents of `CMakeLists.txt` into `flang/lib/Optimizer/Transforms/CMakeLists.txt`
-3. Copy `src/runtime/*` to `flang/runtime/` and add `bounds-check.cpp` to the `flang/runtime/CMakeLists.txt`
+2. Update `flang/lib/Optimizer/Transforms/CMakeLists.txt`
+3. Copy `src/runtime/*` to `flang/runtime/` and update `flang/runtime/CMakeLists.txt`
 4. Apply the `src/driver/FlangDriverIntegration.patch` patch from the root of your LLVM project.
-5. Recompile `flang-new`.
-
-```bash
-cd llvm-project/build
-ninja flang-new FlangRuntime
-```
-
-### Running the Test Suite
-The automated lit tests are configured for FileCheck and MLIR diagnostic output. Run the test suite natively:
-
-```bash
-flang-new -fc1 -fcheck=bounds -emit-hlfir src/tests/bounds_check.f90 -o - | FileCheck src/tests/bounds_check.f90
-```
-
-### Running the Benchmarks
-Compile the DGEMM-style benchmark baseline (without bounds checking) and with `-fcheck=bounds` enabled to trace the runtime overhead percentage.
-
-```bash
-# Compile Baseline
-flang-new -O2 src/benchmark/benchmark.f90 -o benchmark_baseline
-
-# Compile Instrumented
-flang-new -O2 -fcheck=bounds src/benchmark/benchmark.f90 -o benchmark_instrumented
-
-# Run both to measure execution difference
-./benchmark_baseline
-./benchmark_instrumented
-```
-
-If the execution time difference is `<15%`, it satisfies NFR-1 target criteria natively.
+5. Recompile `flang-new` using `ninja flang`.
 
 ---
 **License:** Apache License v2.0 with LLVM Exceptions (as per Flang/LLVM standard).

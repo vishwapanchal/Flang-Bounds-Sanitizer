@@ -27,10 +27,16 @@ void _FortranABoundsCheck(int64_t index, int64_t lowerBound, int64_t upperBound,
   const char *safeFileName = fileName ? fileName : "<unknown>";
 
   fprintf(stderr,
-          "BOUNDS CHECK FAILED: array '%s' dimension %d index %lld out of range "
-          "[%lld:%lld] at %s:%d\n",
-          safeVarName, dim, (long long)index, (long long)lowerBound,
-          (long long)upperBound, safeFileName, lineNumber);
+          "\n\033[1;31m========================================================================\033[0m\n"
+          "\033[1;31m                      HLFIR BOUNDS VIOLATION DETECTED                   \033[0m\n"
+          "\033[1;31m========================================================================\033[0m\n\n"
+          "\033[1;37m  File:      \033[0m \033[1;34m%s\033[0m\n"
+          "\033[1;37m  Line:      \033[0m \033[1;33m%d\033[0m\n"
+          "\033[1;37m  Variable:  \033[0m \033[1;36m%s\033[0m\n"
+          "\033[1;37m  Dimension: \033[0m \033[1;35m%d\033[0m\n"
+          "\033[1;37m  Access:    \033[0m \033[1;31m%lld\033[0m (Valid Range: [\033[1;32m%lld\033[0m:\033[1;32m%lld\033[0m])\n\n"
+          "\033[1;31m========================================================================\033[0m\n\n",
+          safeFileName, lineNumber, safeVarName, dim, (long long)index, (long long)lowerBound, (long long)upperBound);
 
   // Terminate the program using the true Fortran runtime's Terminator
   Fortran::runtime::Terminator terminator{safeFileName, lineNumber};
