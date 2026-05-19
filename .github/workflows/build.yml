@@ -123,7 +123,8 @@ jobs:
           
           echo "::group::Ninja Build Execution (Real-Time Output)"
           # -v forces Ninja to print the EXACT compiler commands it executes in real-time
-          ninja -v flang
+          # ONLY build the specific libraries we need: driver, pass, and runtime.
+          ninja -v flang-new FIRTransforms flang_rt.runtime || ninja -v flang-new FIRTransforms FlangRuntime
           echo "::endgroup::"
 
       - name: Post-Build CCache Stats
