@@ -244,6 +244,11 @@ struct HLFIRBoundsCheckPass
     for (int64_t dim = 0; dim < rank; ++dim) {
       Value idx = indices[dim];
 
+      // DEFENSIVE QA: Ensure the index is an integer or index type to prevent compiler crash
+      if (!idx.getType().isIntOrIndex()) {
+        continue; // Gracefully skip instrumentation for unsupported index types
+      }
+
       // Cast index to i64 if needed.
       if (idx.getType() != i64Ty)
         idx = builder.create<arith::ExtSIOp>(loc, i64Ty, idx);
@@ -257,16 +262,24 @@ struct HLFIRBoundsCheckPass
 
       if (shapeShiftOp) {
         auto operands = shapeShiftOp.getOperands();
+        // DEFENSIVE QA: Ensure operands are valid and within array bounds
+        if ((dim * 2 + 1) >= operands.size()) continue;
         lowerBound = operands[dim * 2];
         extent     = operands[dim * 2 + 1];
       } else if (shapeOp) {
+        auto operands = shapeOp.getOperands();
+        if (dim >= operands.size()) continue;
         // Lower bound is implicitly 1 per Fortran default.
-        lowerBound =
-            builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
-        extent = shapeOp.getOperands()[dim];
+        lowerBound = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
+        extent = operands[dim];
       } else {
         // Cannot statically resolve dynamic descriptor shape here.
         // Safely skip bounds check for this dimension to avoid false positives.
+        continue;
+      }
+
+      // DEFENSIVE QA: Ensure bounds and extents are integers
+      if (!lowerBound.getType().isIntOrIndex() || !extent.getType().isIntOrIndex()) {
         continue;
       }
 

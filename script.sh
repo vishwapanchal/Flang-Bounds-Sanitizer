@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 echo "[*] Generating High-Performance Cached Docker infrastructure (12 Cores / 16GB RAM)..."
 
