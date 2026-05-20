@@ -46,7 +46,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "BoundsCheckInstrumentation.h"
+#include "flang/Optimizer/Transforms/BoundsCheckInstrumentation.h"
 
 #include "flang/Optimizer/Dialect/FIROps.h"
 #include "flang/Optimizer/HLFIR/HLFIROps.h"
