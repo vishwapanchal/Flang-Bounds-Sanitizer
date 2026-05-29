@@ -49,15 +49,15 @@ RUN set -eux && \
         sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' \
             "$RUNTIME_DIR/CMakeLists.txt"; \
     else \
-        sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' \
+        sed -i '/add_flang_library(FortranRuntime/a\  bounds-check.cpp' \
             "$RUNTIME_DIR/CMakeLists.txt"; \
     fi && \
     \
     echo "==> Patching pipeline..." && \
     sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' \
-        /workspace/llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp && \
+        /workspace/llvm-project/flang/include/flang/Tools/CLOptions.inc && \
     sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' \
-        /workspace/llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
+        /workspace/llvm-project/flang/include/flang/Tools/CLOptions.inc
 
 WORKDIR /workspace/llvm-project/build
 
@@ -66,7 +66,7 @@ ENV CCACHE_DIR=/ccache
 # CMake configuration — optimized for 8GB RAM systems
 RUN cmake -G Ninja ../llvm \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DLLVM_ENABLE_PROJECTS="flang;mlir" \
+    -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
     -DLLVM_ENABLE_RUNTIMES="flang-rt" \
     -DLLVM_TARGETS_TO_BUILD="host" \
     -DCMAKE_C_COMPILER=clang \

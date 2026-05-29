@@ -308,7 +308,7 @@ jobs:
           cd llvm-project && mkdir -p build && cd build
           cmake -G Ninja ../llvm \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DLLVM_ENABLE_PROJECTS="flang;mlir" \
+            -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
             -DLLVM_ENABLE_RUNTIMES="flang-rt" \
             -DLLVM_TARGETS_TO_BUILD="X86" \
             -DCMAKE_C_COMPILER=clang \
