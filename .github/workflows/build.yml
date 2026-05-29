@@ -43,12 +43,55 @@ jobs:
           echo "All files passed syntax validation."
 
   # ---------------------------------------------------------------
-  # Job 2: Full LLVM/Flang build with bounds sanitizer
+  # Job 2: Extreme Pre-flight Environment & Dependency Checks
+  # ---------------------------------------------------------------
+  extreme-preflight-checks:
+    name: Extreme Environment & Limits Validation
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Validate System Hardware (CPU & RAM)
+        run: |
+          echo "=== CPU ARCHITECTURE & LIMITS ==="
+          lscpu
+          echo "Total Cores Available: $(nproc)"
+          echo "=== MEMORY (RAM & SWAP) LIMITS ==="
+          free -h
+          vmstat -s
+      
+      - name: Validate Storage Limits
+        run: |
+          echo "=== DISK SPACE LIMITS ==="
+          df -h
+          echo "=== I/O LIMITS & FILE SYSTEM ==="
+          lsblk -f
+
+      - name: Validate Build Dependencies & Compilers
+        run: |
+          echo "=== INSTALLING DEPENDENCIES ==="
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build clang lld ccache git python3
+          echo "=== VERIFYING DEPENDENCY VERSIONS ==="
+          cmake --version
+          ninja --version
+          clang --version
+          ld.lld --version
+          ccache --version
+          git --version
+          python3 --version
+
+      - name: Validate Network Connectivity & Exports
+        run: |
+          echo "=== NETWORK CONNECTIVITY (GitHub / LLVM) ==="
+          ping -c 3 github.com
+          curl -I https://github.com/llvm/llvm-project
+
+  # ---------------------------------------------------------------
+  # Job 3: Full LLVM/Flang build with bounds sanitizer
   # ---------------------------------------------------------------
   build-and-test:
     name: Compile & Verify LLVM/Flang
     runs-on: ubuntu-22.04
-    needs: validate-tests
+    needs: [validate-tests, extreme-preflight-checks]
 
     steps:
       - name: Checkout project
@@ -58,7 +101,8 @@ jobs:
 
       - name: Create swap space (8GB safety net)
         run: |
-          sudo fallocate -l 8G /swapfile
+          echo "Creating 8GB swap space using dd (bypassing text file busy/overlayfs issues)..."
+          sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=progress
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
