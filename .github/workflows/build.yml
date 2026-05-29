@@ -21,7 +21,8 @@ env:
   LLVM_VERSION: "19.1.7"
   CACHE_EPOCH: "v2"                     # bump to force a full rebuild
   DEBIAN_FRONTEND: noninteractive       # [OPT-8] prevent apt-get hangs
-  SCCACHE_GHA_ENABLED: "true"           # [OPT-1] sccache → GHA backend
+  SCCACHE_DIR: "/home/runner/.cache/sccache" # [OPT-1] sccache → Local Directory
+  SCCACHE_CACHE_SIZE: "5G"
   LLVM_TARBALL_SHA256: "59abea1c22e64933fad4de1671a61cdb934098793c7a31b333ff58dc41bff36c"
 
 jobs:
@@ -159,21 +160,23 @@ jobs:
         with:
           version: "v0.7.7"
 
-      # ── 5b. Verify sccache server and start explicitly ──────────────────
-      - name: Verify sccache status
+      # ── 5b. Restore sccache local cache directory ─────────
+      - name: Restore sccache cache
+        if: steps.cache-flang.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-${{ env.CACHE_EPOCH }}-${{ runner.os }}-${{ env.LLVM_VERSION }}-${{ github.run_id }}
+          restore-keys: |
+            sccache-${{ env.CACHE_EPOCH }}-${{ runner.os }}-${{ env.LLVM_VERSION }}-
+
+      # ── 5c. Start sccache server ──────────────────────────
+      - name: Start sccache server
         if: steps.cache-flang.outputs.cache-hit != 'true'
         run: |
-          set +e
           echo "Starting sccache server..."
           sccache --start-server
-          exit_code=$?
-          if [ $exit_code -ne 0 ] || ! sccache --show-stats >/dev/null 2>&1; then
-            echo "sccache-failed=true" >> $GITHUB_ENV
-            echo "::warning::sccache server failed to start. Falling back to local compiling."
-          else
-            echo "sccache server started successfully."
-          fi
-          set -e
+          sccache --show-stats
 
       # ── 6. LLVM tarball cache ─────────────────────────────────────
       - name: Restore LLVM tarball
@@ -274,6 +277,13 @@ jobs:
             sed -i "/$PASS_ANCHOR/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());" \
                 "$CLOPTS"
           fi
+
+          # ── 8d. Patch LLVM 19 idioms.h CHECK_MSG bug ────────────────
+          echo "" >> llvm-project/flang/include/flang/Common/idioms.h
+          echo "#ifndef CHECK_MSG" >> llvm-project/flang/include/flang/Common/idioms.h
+          echo "#define CHECK_MSG(expr, msg) ((void)0)" >> llvm-project/flang/include/flang/Common/idioms.h
+          echo "#endif" >> llvm-project/flang/include/flang/Common/idioms.h
+
           echo "All integrations applied."
 
       # ── 9. CMake configure ────────────────────────────────────────
@@ -282,14 +292,8 @@ jobs:
         run: |
           cd llvm-project && mkdir -p build && cd build
           
-          # Gracefully toggle sccache based on startup validation
-          LAUNCHER_FLAGS=""
-          if [ "${{ env.sccache-failed }}" != "true" ]; then
-            echo "sccache server is active. Enabling compiler caching."
-            LAUNCHER_FLAGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
-          else
-            echo "sccache server is down. Bypassing cache to build locally."
-          fi
+          echo "Enabling compiler caching with sccache."
+          LAUNCHER_FLAGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
 
           cmake -G Ninja ../llvm \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -318,9 +322,7 @@ jobs:
           ninja -j$(nproc) flang-new FortranRuntime
           echo "Build complete. flang-new size: $(du -sh bin/flang-new | cut -f1)"
           
-          if [ "${{ env.sccache-failed }}" != "true" ]; then
-            sccache --show-stats
-          fi
+          sccache --show-stats
 
       # ── 11. Stage Flang artefacts for cache ──────────────────────
       - name: Stage Flang artefacts for cache
