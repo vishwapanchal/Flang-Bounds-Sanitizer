@@ -82,7 +82,6 @@ jobs:
       - name: Validate Network Connectivity & Exports
         run: |
           echo "=== NETWORK CONNECTIVITY (GitHub / LLVM) ==="
-          ping -c 3 github.com
           curl -I https://github.com/llvm/llvm-project
 
   # ---------------------------------------------------------------
