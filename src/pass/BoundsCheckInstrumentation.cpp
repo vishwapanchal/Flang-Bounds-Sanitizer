@@ -343,7 +343,7 @@ struct HLFIRBoundsCheckPass
       Value varPtrCast  = builder.create<fir::ConvertOp>(loc, charPtrTy, varPtr);
       Value filePtrCast = builder.create<fir::ConvertOp>(loc, charPtrTy, filePtr);
 
-      builder.create<scf::IfOp>(loc, dimOOB, /*withElseRegion=*/false,
+      builder.create<scf::IfOp>(loc, dimOOB,
           [&](OpBuilder &ifBuilder, Location ifLoc) {
             ifBuilder.create<func::CallOp>(
                 ifLoc, "_FortranABoundsCheck",
