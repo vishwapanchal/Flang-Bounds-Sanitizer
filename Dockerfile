@@ -23,8 +23,8 @@ RUN fallocate -l 4G /swapfile && chmod 600 /swapfile \
 
 WORKDIR /workspace
 
-# Shallow-clone LLVM to minimize download time and disk usage
-RUN git clone --depth 1 https://github.com/llvm/llvm-project.git
+# Shallow-clone LLVM stable release 19.1.7 to minimize download time, disk usage, and guarantee consistency
+RUN git clone -b llvmorg-19.1.7 --depth 1 https://github.com/llvm/llvm-project.git
 
 # Copy project source files into the container
 COPY src/ /workspace/src/

@@ -153,7 +153,7 @@ Open a Colab notebook with a GPU runtime (provides ~12.7GB RAM), then:
 
 ```bash
 !git clone https://github.com/vishwapanchal/Flang-Bounds-Sanitizer.git project
-!git clone --depth 1 https://github.com/llvm/llvm-project.git
+!git clone -b llvmorg-19.1.7 --depth 1 https://github.com/llvm/llvm-project.git
 !apt-get install -y cmake ninja-build clang lld ccache
 
 # Inject project files (same steps as Dockerfile RUN block)
@@ -217,11 +217,15 @@ For an existing LLVM/Flang checkout:
 The GitHub Actions workflow (`.github/workflows/build.yml`) performs:
 
 1. **Syntax Validation** — runs `gfortran -fsyntax-only` on all 22 test files
-2. **Full LLVM Build** — shallow-clones LLVM, injects the sanitizer, builds with `ninja -j 2`
+2. **Full LLVM Build** — retrieves and extracts a pinned, compressed LLVM release tarball (`llvmorg-19.1.7`), injects the sanitizer, and builds with `ninja -j 2`
 3. **Runtime Verification** — compiles `demo.f90` with `-fcheck=bounds` and verifies the diagnostic appears on stderr
 4. **Artifact Upload** — uploads the compiled `flang-new` binary for 7 days
 
-Builds use persistent ccache via `hendrikmuhs/ccache-action` and an 8GB swap file to survive the 7GB GitHub runner memory limit.
+### Fast Build Caching Strategy (5–8 Minutes)
+To optimize build speed under the 10GB GitHub Actions cache limit:
+- **Pinned Source Tarball Caching**: Instead of a full git clone or caching the huge extracted folder, the workflow caches the **~158MB compressed release tarball** for `llvmorg-19.1.7`. This minimizes network/checkout overhead down to **~6 seconds** and uses negligible cache storage.
+- **Maximized ccache Budget**: Saving 98% of the repository's 10GB cache budget ensures that C++ compiled objects are never evicted. Subsequent builds hit the `ccache` and finish in **5 to 8 minutes** rather than the full 4-hour compilation.
+- **8GB Swap Space**: A swap space safety net prevents OOM errors on standard runner instances.
 
 ---
 

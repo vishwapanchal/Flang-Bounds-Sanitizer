@@ -107,12 +107,26 @@ jobs:
           sudo swapon /swapfile_extra
           free -h
 
-      - name: Checkout LLVM (shallow)
-        uses: actions/checkout@v4
+      - name: Cache LLVM Tarball
+        id: cache-llvm-tarball
+        uses: actions/cache@v4
         with:
-          repository: llvm/llvm-project
-          path: llvm-project
-          fetch-depth: 1
+          path: llvm-project-19.1.7.tar.gz
+          key: llvm-tarball-19.1.7
+
+      - name: Download LLVM Tarball (if cache miss)
+        if: steps.cache-llvm-tarball.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache miss. Downloading stable LLVM 19.1.7 tarball..."
+          curl -L --retry 5 --retry-connrefused --connect-timeout 30 \
+            https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-19.1.7.tar.gz \
+            -o llvm-project-19.1.7.tar.gz
+
+      - name: Extract LLVM Tarball
+        run: |
+          echo "Extracting LLVM tarball..."
+          mkdir -p llvm-project
+          tar -xf llvm-project-19.1.7.tar.gz --strip-components=1 -C llvm-project
 
       - name: Install build toolchain
         run: |
