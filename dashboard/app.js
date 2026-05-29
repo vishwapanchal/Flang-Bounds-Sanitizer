@@ -219,7 +219,24 @@
     // ---------------------------------------------------------------
     function init() {
         initCategoryFilter();
-        renderTests('all');
+        
+        // Dynamically fetch actual results from GHA CI run if hosted on Pages
+        fetch('results.json')
+            .then(res => res.json())
+            .then(actualResults => {
+                actualResults.forEach(actual => {
+                    const match = TEST_DATA.find(t => t.id === actual.id);
+                    if (match) {
+                        match.status = actual.status;
+                    }
+                });
+                renderTests('all');
+            })
+            .catch(err => {
+                console.log('No results.json found. Defaulting to representative data.', err);
+                renderTests('all');
+            });
+
         renderBenchmarks();
         renderComparison();
         renderTerminal();

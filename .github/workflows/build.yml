@@ -14,6 +14,8 @@ concurrency:
 permissions:
   contents: read
   actions: write
+  pages: write
+  id-token: write
 
 env:
   LLVM_VERSION: "19.1.7"
@@ -421,6 +423,9 @@ jobs:
           failed=0
           total=22
           
+          # Initialize dynamic JSON array
+          echo "[" > results.json
+          
           for i in $(seq -f "%02g" 1 22); do
             file=$(find project/src/tests -name "tc${i}_*.f90" | head -n 1)
             if [ -z "$file" ]; then
@@ -431,11 +436,18 @@ jobs:
             name=$(basename "$file" .f90)
             echo -n "Running $name... "
             
+            status="fail"
+            
             # Compile the test case
             if ! "$FLANG" -O2 -fcheck=bounds "$file" -o "test_$name" 2>compile_err.log; then
               echo -e "\033[0;31mFAILED TO COMPILE\033[0m"
               cat compile_err.log | sed 's/^/  /'
               failed=$((failed + 1))
+              status="fail"
+              
+              comma=","
+              [ "$i" -eq 22 ] && comma=""
+              echo "  { \"id\": \"TC-$i\", \"status\": \"$status\" }$comma" >> results.json
               continue
             fi
             
@@ -457,25 +469,37 @@ jobs:
               if [ $exit_code -eq 0 ]; then
                 echo -e "\033[0;32m✓ PASSED (Executed successfully)\033[0m"
                 passed=$((passed + 1))
+                status="pass"
               else
                 echo -e "\033[0;31m✗ FAILED (Program crashed but should have succeeded)\033[0m"
                 cat run_err.log | sed 's/^/  /'
                 failed=$((failed + 1))
+                status="fail"
               fi
             else
               # Invalid test case: bounds violation expected, program should crash and emit diagnostics
               if grep -q "HLFIR BOUNDS VIOLATION DETECTED" run_err.log; then
                 echo -e "\033[0;32m✓ PASSED (Violation intercepted successfully)\033[0m"
                 passed=$((passed + 1))
+                status="pass"
               else
                 echo -e "\033[0;31m✗ FAILED (Sanitizer failed to intercept violation)\033[0m"
                 echo "  Exit code: $exit_code"
                 cat run_err.log | sed 's/^/  /'
                 failed=$((failed + 1))
+                status="fail"
               fi
             fi
+            
+            # Write outcomes to dynamic JSON records
+            comma=","
+            [ "$i" -eq 22 ] && comma=""
+            echo "  { \"id\": \"TC-$i\", \"status\": \"$status\" }$comma" >> results.json
+            
             rm -f "test_$name" run_err.log compile_err.log
           done
+          
+          echo "]" >> results.json
           
           echo "========================================================"
           echo " TEST SUITE SUMMARY: $passed / $total PASSED"
@@ -485,6 +509,13 @@ jobs:
             echo "::error::$failed test case(s) failed verification."
             exit 1
           fi
+
+      - name: Upload test results JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-json
+          path: results.json
+          retention-days: 1
 
   # ───────────────────────────────────────────────────────────────
   # Job 5 – Package & Publish Release
@@ -515,3 +546,50 @@ jobs:
           name: flang-bounds-sanitizer-linux-x86_64
           path: flang-bounds-sanitizer-linux-x86_64.tar.gz
           retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────
+  # Job 6 – Deploy Live Dashboard to GitHub Pages
+  # ───────────────────────────────────────────────────────────────
+  deploy-dashboard:
+    name: Deploy Live Dashboard
+    needs: [verify-demo, verify-test-suite]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: Download test results JSON
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-json
+          path: results-json-dir
+
+      - name: Setup pages
+        uses: actions/configure-pages@v4
+
+      - name: Prepare dashboard site
+        run: |
+          mkdir -p site
+          cp -r project/dashboard/* site/
+          cp results-json-dir/results.json site/
+          echo "Dashboard files prepared:"
+          ls -la site
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Output dashboard link
+        run: |
+          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          echo "### 🚀 Live Dashboard Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "The array bounds checking sanitizer dashboard is now live on GitHub Pages!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "👉 **[Open Live Dashboard]($URL)**" >> $GITHUB_STEP_SUMMARY
