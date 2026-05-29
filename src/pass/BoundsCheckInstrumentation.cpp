@@ -109,8 +109,8 @@ static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
 
   auto strType = fir::CharacterType::get(builder.getContext(), 1, str.size() + 1);
   auto global = builder.create<fir::GlobalOp>(
-      loc, symName, /*isConstant=*/true, fir::LinkageAttr::get(
-          builder.getContext(), fir::GlobalLinkageKind::InternalLinkage),
+      loc, symName, /*isConstant=*/true, mlir::LLVM::LinkageAttr::get(
+          builder.getContext(), mlir::LLVM::Linkage::Internal),
       strType, builder.getStringAttr(str));
   (void)global;
   return FlatSymbolRefAttr::get(builder.getContext(), symName);
@@ -185,8 +185,9 @@ struct HLFIRBoundsCheckPass
 
     OpBuilder::InsertionGuard guard(builder);
     builder.setInsertionPointToStart(module.getBody());
-    auto fn = builder.create<func::FuncOp>(
+    auto fn = func::FuncOp::create(
         module.getLoc(), "_FortranABoundsCheck", fnTy);
+    builder.insert(fn);
     fn.setPrivate();
     (void)voidTy;
   }

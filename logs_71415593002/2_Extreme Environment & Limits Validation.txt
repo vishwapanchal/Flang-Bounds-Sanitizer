@@ -1,0 +1,312 @@
+﻿2026-05-29T15:49:02.0624900Z Current runner version: '2.334.0'
+2026-05-29T15:49:02.0649757Z ##[group]Runner Image Provisioner
+2026-05-29T15:49:02.0650827Z Hosted Compute Agent
+2026-05-29T15:49:02.0651450Z Version: 20260520.533
+2026-05-29T15:49:02.0652136Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+2026-05-29T15:49:02.0652899Z Build Date: 2026-05-20T17:44:04Z
+2026-05-29T15:49:02.0653623Z Worker ID: {7c1f98f0-c3fb-4eea-875d-ee393320865d}
+2026-05-29T15:49:02.0654447Z Azure Region: westus
+2026-05-29T15:49:02.0655046Z ##[endgroup]
+2026-05-29T15:49:02.0656580Z ##[group]Operating System
+2026-05-29T15:49:02.0657295Z Ubuntu
+2026-05-29T15:49:02.0657825Z 22.04.5
+2026-05-29T15:49:02.0658400Z LTS
+2026-05-29T15:49:02.0659277Z ##[endgroup]
+2026-05-29T15:49:02.0659935Z ##[group]Runner Image
+2026-05-29T15:49:02.0660678Z Image: ubuntu-22.04
+2026-05-29T15:49:02.0661267Z Version: 20260525.156.1
+2026-05-29T15:49:02.0662620Z Included Software: https://github.com/actions/runner-images/blob/ubuntu22/20260525.156/images/ubuntu/Ubuntu2204-Readme.md
+2026-05-29T15:49:02.0664471Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu22%2F20260525.156
+2026-05-29T15:49:02.0665582Z ##[endgroup]
+2026-05-29T15:49:02.0666806Z ##[group]GITHUB_TOKEN Permissions
+2026-05-29T15:49:02.0668844Z Contents: read
+2026-05-29T15:49:02.0669717Z Metadata: read
+2026-05-29T15:49:02.0670388Z Packages: read
+2026-05-29T15:49:02.0671014Z ##[endgroup]
+2026-05-29T15:49:02.0673356Z Secret source: Actions
+2026-05-29T15:49:02.0674257Z Prepare workflow directory
+2026-05-29T15:49:02.1017989Z Prepare all required actions
+2026-05-29T15:49:02.1134205Z Complete job name: Extreme Environment & Limits Validation
+2026-05-29T15:49:02.1922126Z ##[group]Run echo "=== CPU ARCHITECTURE & LIMITS ==="
+2026-05-29T15:49:02.1923191Z [36;1mecho "=== CPU ARCHITECTURE & LIMITS ==="[0m
+2026-05-29T15:49:02.1924001Z [36;1mlscpu[0m
+2026-05-29T15:49:02.1925036Z [36;1mecho "Total Cores Available: $(nproc)"[0m
+2026-05-29T15:49:02.1926697Z [36;1mecho "=== MEMORY (RAM & SWAP) LIMITS ==="[0m
+2026-05-29T15:49:02.1927952Z [36;1mfree -h[0m
+2026-05-29T15:49:02.1928927Z [36;1mvmstat -s[0m
+2026-05-29T15:49:02.2906394Z shell: /usr/bin/bash -e {0}
+2026-05-29T15:49:02.2908297Z ##[endgroup]
+2026-05-29T15:49:02.3170375Z === CPU ARCHITECTURE & LIMITS ===
+2026-05-29T15:49:02.3192219Z Architecture:                            x86_64
+2026-05-29T15:49:02.3194923Z CPU op-mode(s):                          32-bit, 64-bit
+2026-05-29T15:49:02.3196637Z Address sizes:                           48 bits physical, 48 bits virtual
+2026-05-29T15:49:02.3203597Z Byte Order:                              Little Endian
+2026-05-29T15:49:02.3205633Z CPU(s):                                  4
+2026-05-29T15:49:02.3207083Z On-line CPU(s) list:                     0-3
+2026-05-29T15:49:02.3208621Z Vendor ID:                               AuthenticAMD
+2026-05-29T15:49:02.3210644Z Model name:                              AMD EPYC 7763 64-Core Processor
+2026-05-29T15:49:02.3212269Z CPU family:                              25
+2026-05-29T15:49:02.3214028Z Model:                                   1
+2026-05-29T15:49:02.3215330Z Thread(s) per core:                      2
+2026-05-29T15:49:02.3217122Z Core(s) per socket:                      2
+2026-05-29T15:49:02.3218463Z Socket(s):                               1
+2026-05-29T15:49:02.3220018Z Stepping:                                1
+2026-05-29T15:49:02.3221274Z BogoMIPS:                                4890.85
+2026-05-29T15:49:02.3229846Z Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm
+2026-05-29T15:49:02.3238708Z Virtualization:                          AMD-V
+2026-05-29T15:49:02.3240445Z Hypervisor vendor:                       Microsoft
+2026-05-29T15:49:02.3241712Z Virtualization type:                     full
+2026-05-29T15:49:02.3243162Z L1d cache:                               64 KiB (2 instances)
+2026-05-29T15:49:02.3244624Z L1i cache:                               64 KiB (2 instances)
+2026-05-29T15:49:02.3245989Z L2 cache:                                1 MiB (2 instances)
+2026-05-29T15:49:02.3247660Z L3 cache:                                32 MiB (1 instance)
+2026-05-29T15:49:02.3248939Z NUMA node(s):                            1
+2026-05-29T15:49:02.3250294Z NUMA node0 CPU(s):                       0-3
+2026-05-29T15:49:02.3251831Z Vulnerability Gather data sampling:      Not affected
+2026-05-29T15:49:02.3253267Z Vulnerability Indirect target selection: Not affected
+2026-05-29T15:49:02.3254772Z Vulnerability Itlb multihit:             Not affected
+2026-05-29T15:49:02.3256434Z Vulnerability L1tf:                      Not affected
+2026-05-29T15:49:02.3257887Z Vulnerability Mds:                       Not affected
+2026-05-29T15:49:02.3259737Z Vulnerability Meltdown:                  Not affected
+2026-05-29T15:49:02.3261156Z Vulnerability Mmio stale data:           Not affected
+2026-05-29T15:49:02.3262723Z Vulnerability Reg file data sampling:    Not affected
+2026-05-29T15:49:02.3264076Z Vulnerability Retbleed:                  Not affected
+2026-05-29T15:49:02.3266120Z Vulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode
+2026-05-29T15:49:02.3267829Z Vulnerability Spec store bypass:         Vulnerable
+2026-05-29T15:49:02.3270140Z Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+2026-05-29T15:49:02.3272861Z Vulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+2026-05-29T15:49:02.3275080Z Vulnerability Srbds:                     Not affected
+2026-05-29T15:49:02.3276882Z Vulnerability Tsa:                       Vulnerable: Clear CPU buffers attempted, no microcode
+2026-05-29T15:49:02.3278638Z Vulnerability Tsx async abort:           Not affected
+2026-05-29T15:49:02.3280402Z Vulnerability Vmscape:                   Not affected
+2026-05-29T15:49:02.3281750Z Total Cores Available: 4
+2026-05-29T15:49:02.3282808Z === MEMORY (RAM & SWAP) LIMITS ===
+2026-05-29T15:49:02.3288281Z                total        used        free      shared  buff/cache   available
+2026-05-29T15:49:02.3290350Z Mem:            15Gi       545Mi        13Gi        36Mi       1.5Gi        14Gi
+2026-05-29T15:49:02.3291871Z Swap:          3.0Gi          0B       3.0Gi
+2026-05-29T15:49:02.3784856Z      16374828 K total memory
+2026-05-29T15:49:02.3785748Z        559112 K used memory
+2026-05-29T15:49:02.3786355Z        680844 K active memory
+2026-05-29T15:49:02.3786923Z       1106056 K inactive memory
+2026-05-29T15:49:02.3787482Z      14221380 K free memory
+2026-05-29T15:49:02.3788031Z         64568 K buffer memory
+2026-05-29T15:49:02.3788685Z       1529768 K swap cache
+2026-05-29T15:49:02.3789844Z       3145724 K total swap
+2026-05-29T15:49:02.3790739Z             0 K used swap
+2026-05-29T15:49:02.3791587Z       3145724 K free swap
+2026-05-29T15:49:02.3792278Z          1565 non-nice user cpu ticks
+2026-05-29T15:49:02.3792888Z             2 nice user cpu ticks
+2026-05-29T15:49:02.3793713Z          1099 system cpu ticks
+2026-05-29T15:49:02.3794641Z         50100 idle cpu ticks
+2026-05-29T15:49:02.3795443Z           738 IO-wait cpu ticks
+2026-05-29T15:49:02.3796072Z             0 IRQ cpu ticks
+2026-05-29T15:49:02.3796619Z            42 softirq cpu ticks
+2026-05-29T15:49:02.3797154Z             0 stolen cpu ticks
+2026-05-29T15:49:02.3797662Z        760592 pages paged in
+2026-05-29T15:49:02.3798165Z       3238336 pages paged out
+2026-05-29T15:49:02.3799314Z             0 pages swapped in
+2026-05-29T15:49:02.3799860Z             0 pages swapped out
+2026-05-29T15:49:02.3800355Z        156583 interrupts
+2026-05-29T15:49:02.3800832Z        194932 CPU context switches
+2026-05-29T15:49:02.3801344Z    1780069606 boot time
+2026-05-29T15:49:02.3801792Z          1880 forks
+2026-05-29T15:49:02.3897994Z ##[group]Run echo "=== DISK SPACE LIMITS ==="
+2026-05-29T15:49:02.3898667Z [36;1mecho "=== DISK SPACE LIMITS ==="[0m
+2026-05-29T15:49:02.3899425Z [36;1mdf -h[0m
+2026-05-29T15:49:02.3899919Z [36;1mecho "=== I/O LIMITS & FILE SYSTEM ==="[0m
+2026-05-29T15:49:02.3900509Z [36;1mlsblk -f[0m
+2026-05-29T15:49:02.3955073Z shell: /usr/bin/bash -e {0}
+2026-05-29T15:49:02.3955606Z ##[endgroup]
+2026-05-29T15:49:02.4039430Z === DISK SPACE LIMITS ===
+2026-05-29T15:49:02.4298290Z Filesystem      Size  Used Avail Use% Mounted on
+2026-05-29T15:49:02.4300048Z /dev/root       146G   56G   90G  39% /
+2026-05-29T15:49:02.4301289Z tmpfs           7.9G  172K  7.9G   1% /dev/shm
+2026-05-29T15:49:02.4302475Z tmpfs           3.2G  1.1M  3.2G   1% /run
+2026-05-29T15:49:02.4303547Z tmpfs           5.0M     0  5.0M   0% /run/lock
+2026-05-29T15:49:02.4304880Z efivarfs        128M   34K  128M   1% /sys/firmware/efi/efivars
+2026-05-29T15:49:02.4306393Z /dev/sda15      105M  6.1M   99M   6% /boot/efi
+2026-05-29T15:49:02.4307852Z tmpfs           1.6G   12K  1.6G   1% /run/user/1001
+2026-05-29T15:49:02.4309248Z === I/O LIMITS & FILE SYSTEM ===
+2026-05-29T15:49:02.4350620Z NAME    FSTYPE   FSVER LABEL           UUID                                 FSAVAIL FSUSE% MOUNTPOINTS
+2026-05-29T15:49:02.4352393Z loop0   squashfs 4.0                                                              0   100% /snap/core20/2769
+2026-05-29T15:49:02.4354083Z loop1   squashfs 4.0                                                              0   100% /snap/lxd/38800
+2026-05-29T15:49:02.4355717Z loop2   squashfs 4.0                                                              0   100% /snap/snapd/26865
+2026-05-29T15:49:02.4357209Z sda                                                                                        
+2026-05-29T15:49:02.4458363Z ├─sda1  ext4     1.0   cloudimg-rootfs ad4774f2-8200-4d2e-94ee-e4bc2faf3e25   89.3G    38% /
+2026-05-29T15:49:02.4459640Z ├─sda14                                                                                    
+2026-05-29T15:49:02.4460595Z └─sda15 vfat     FAT32 UEFI            EA66-3EF4                              98.3M     6% /boot/efi
+2026-05-29T15:49:02.4497331Z ##[group]Run echo "=== INSTALLING DEPENDENCIES ==="
+2026-05-29T15:49:02.4498085Z [36;1mecho "=== INSTALLING DEPENDENCIES ==="[0m
+2026-05-29T15:49:02.4498698Z [36;1msudo apt-get update -qq[0m
+2026-05-29T15:49:02.4499648Z [36;1msudo apt-get install -y cmake ninja-build clang lld ccache git python3[0m
+2026-05-29T15:49:02.4500486Z [36;1mecho "=== VERIFYING DEPENDENCY VERSIONS ==="[0m
+2026-05-29T15:49:02.4501102Z [36;1mcmake --version[0m
+2026-05-29T15:49:02.4501595Z [36;1mninja --version[0m
+2026-05-29T15:49:02.4502059Z [36;1mclang --version[0m
+2026-05-29T15:49:02.4502529Z [36;1mld.lld --version[0m
+2026-05-29T15:49:02.4502995Z [36;1mccache --version[0m
+2026-05-29T15:49:02.4503454Z [36;1mgit --version[0m
+2026-05-29T15:49:02.4503915Z [36;1mpython3 --version[0m
+2026-05-29T15:49:02.4557527Z shell: /usr/bin/bash -e {0}
+2026-05-29T15:49:02.4558017Z ##[endgroup]
+2026-05-29T15:49:02.4636226Z === INSTALLING DEPENDENCIES ===
+2026-05-29T15:49:09.5756035Z Reading package lists...
+2026-05-29T15:49:09.8035502Z Building dependency tree...
+2026-05-29T15:49:09.8047441Z Reading state information...
+2026-05-29T15:49:09.9722663Z python3 is already the newest version (3.10.6-1~22.04.1).
+2026-05-29T15:49:09.9724248Z git is already the newest version (1:2.54.0-0ppa1~ubuntu22.04.1).
+2026-05-29T15:49:09.9725697Z The following additional packages will be installed:
+2026-05-29T15:49:09.9732488Z   cmake-data dh-elpa-helper libhiredis0.14 libjsoncpp25 librhash0
+2026-05-29T15:49:09.9739495Z Suggested packages:
+2026-05-29T15:49:09.9740300Z   distcc | icecc cmake-doc cmake-format
+2026-05-29T15:49:09.9968768Z The following NEW packages will be installed:
+2026-05-29T15:49:09.9970587Z   ccache clang cmake cmake-data dh-elpa-helper libhiredis0.14 libjsoncpp25
+2026-05-29T15:49:09.9976766Z   librhash0 lld ninja-build
+2026-05-29T15:49:10.0145557Z 0 upgraded, 10 newly installed, 0 to remove and 46 not upgraded.
+2026-05-29T15:49:10.0146591Z Need to get 7781 kB of archives.
+2026-05-29T15:49:10.0988660Z After this operation, 33.7 MB of additional disk space will be used.
+2026-05-29T15:49:10.0990343Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-05-29T15:49:10.0991887Z Get:2 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 libhiredis0.14 amd64 0.14.1-2 [32.8 kB]
+2026-05-29T15:49:10.1720316Z Get:3 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 ccache amd64 4.5.1-1 [495 kB]
+2026-05-29T15:49:10.2519860Z Get:4 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 clang amd64 1:14.0-55~exp2 [3558 B]
+2026-05-29T15:49:10.3171617Z Get:5 http://azure.archive.ubuntu.com/ubuntu jammy/main amd64 libjsoncpp25 amd64 1.9.5-3 [80.0 kB]
+2026-05-29T15:49:10.3848598Z Get:6 http://azure.archive.ubuntu.com/ubuntu jammy/main amd64 librhash0 amd64 1.4.2-1ubuntu1 [125 kB]
+2026-05-29T15:49:10.4520540Z Get:7 http://azure.archive.ubuntu.com/ubuntu jammy/main amd64 dh-elpa-helper all 2.0.9ubuntu1 [7610 B]
+2026-05-29T15:49:10.5176949Z Get:8 http://azure.archive.ubuntu.com/ubuntu jammy-updates/main amd64 cmake-data all 3.22.1-1ubuntu1.22.04.2 [1913 kB]
+2026-05-29T15:49:10.6336243Z Get:9 http://azure.archive.ubuntu.com/ubuntu jammy-updates/main amd64 cmake amd64 3.22.1-1ubuntu1.22.04.2 [5010 kB]
+2026-05-29T15:49:10.8222497Z Get:10 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 lld amd64 1:14.0-55~exp2 [3178 B]
+2026-05-29T15:49:10.8870439Z Get:11 http://azure.archive.ubuntu.com/ubuntu jammy/universe amd64 ninja-build amd64 1.10.1-1 [111 kB]
+2026-05-29T15:49:11.2098839Z Fetched 7781 kB in 1s (8791 kB/s)
+2026-05-29T15:49:11.2417660Z Selecting previously unselected package libhiredis0.14:amd64.
+2026-05-29T15:49:11.2814202Z (Reading database ... 
+2026-05-29T15:49:11.2816474Z (Reading database ... 5%
+2026-05-29T15:49:11.2818074Z (Reading database ... 10%
+2026-05-29T15:49:11.2819307Z (Reading database ... 15%
+2026-05-29T15:49:11.2820083Z (Reading database ... 20%
+2026-05-29T15:49:11.2821035Z (Reading database ... 25%
+2026-05-29T15:49:11.2821824Z (Reading database ... 30%
+2026-05-29T15:49:11.2823406Z (Reading database ... 35%
+2026-05-29T15:49:11.2824050Z (Reading database ... 40%
+2026-05-29T15:49:11.2824596Z (Reading database ... 45%
+2026-05-29T15:49:11.2825202Z (Reading database ... 50%
+2026-05-29T15:49:11.3849798Z (Reading database ... 55%
+2026-05-29T15:49:11.5066581Z (Reading database ... 60%
+2026-05-29T15:49:11.5670013Z (Reading database ... 65%
+2026-05-29T15:49:11.7438476Z (Reading database ... 70%
+2026-05-29T15:49:11.9510431Z (Reading database ... 75%
+2026-05-29T15:49:12.1482799Z (Reading database ... 80%
+2026-05-29T15:49:12.3630030Z (Reading database ... 85%
+2026-05-29T15:49:12.4873296Z (Reading database ... 90%
+2026-05-29T15:49:12.6999754Z (Reading database ... 95%
+2026-05-29T15:49:12.7000422Z (Reading database ... 100%
+2026-05-29T15:49:12.7001380Z (Reading database ... 267993 files and directories currently installed.)
+2026-05-29T15:49:12.7083267Z Preparing to unpack .../0-libhiredis0.14_0.14.1-2_amd64.deb ...
+2026-05-29T15:49:12.7129351Z Unpacking libhiredis0.14:amd64 (0.14.1-2) ...
+2026-05-29T15:49:12.7397421Z Selecting previously unselected package ccache.
+2026-05-29T15:49:12.7602064Z Preparing to unpack .../1-ccache_4.5.1-1_amd64.deb ...
+2026-05-29T15:49:12.7615149Z Unpacking ccache (4.5.1-1) ...
+2026-05-29T15:49:12.8112331Z Selecting previously unselected package clang.
+2026-05-29T15:49:12.8312838Z Preparing to unpack .../2-clang_1%3a14.0-55~exp2_amd64.deb ...
+2026-05-29T15:49:12.8328030Z Unpacking clang (1:14.0-55~exp2) ...
+2026-05-29T15:49:12.8578267Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-05-29T15:49:12.8781264Z Preparing to unpack .../3-libjsoncpp25_1.9.5-3_amd64.deb ...
+2026-05-29T15:49:12.8824689Z Unpacking libjsoncpp25:amd64 (1.9.5-3) ...
+2026-05-29T15:49:12.9100483Z Selecting previously unselected package librhash0:amd64.
+2026-05-29T15:49:12.9305168Z Preparing to unpack .../4-librhash0_1.4.2-1ubuntu1_amd64.deb ...
+2026-05-29T15:49:12.9319467Z Unpacking librhash0:amd64 (1.4.2-1ubuntu1) ...
+2026-05-29T15:49:12.9580856Z Selecting previously unselected package dh-elpa-helper.
+2026-05-29T15:49:12.9788176Z Preparing to unpack .../5-dh-elpa-helper_2.0.9ubuntu1_all.deb ...
+2026-05-29T15:49:12.9799935Z Unpacking dh-elpa-helper (2.0.9ubuntu1) ...
+2026-05-29T15:49:13.0103930Z Selecting previously unselected package cmake-data.
+2026-05-29T15:49:13.0311488Z Preparing to unpack .../6-cmake-data_3.22.1-1ubuntu1.22.04.2_all.deb ...
+2026-05-29T15:49:13.0399414Z Unpacking cmake-data (3.22.1-1ubuntu1.22.04.2) ...
+2026-05-29T15:49:13.6114290Z Selecting previously unselected package cmake.
+2026-05-29T15:49:13.6343181Z Preparing to unpack .../7-cmake_3.22.1-1ubuntu1.22.04.2_amd64.deb ...
+2026-05-29T15:49:13.6359229Z Unpacking cmake (3.22.1-1ubuntu1.22.04.2) ...
+2026-05-29T15:49:13.7456938Z Selecting previously unselected package lld:amd64.
+2026-05-29T15:49:13.7662562Z Preparing to unpack .../8-lld_1%3a14.0-55~exp2_amd64.deb ...
+2026-05-29T15:49:13.7675659Z Unpacking lld:amd64 (1:14.0-55~exp2) ...
+2026-05-29T15:49:13.7964592Z Selecting previously unselected package ninja-build.
+2026-05-29T15:49:13.8167843Z Preparing to unpack .../9-ninja-build_1.10.1-1_amd64.deb ...
+2026-05-29T15:49:13.8179278Z Unpacking ninja-build (1.10.1-1) ...
+2026-05-29T15:49:13.8931448Z Setting up lld:amd64 (1:14.0-55~exp2) ...
+2026-05-29T15:49:13.8961291Z Setting up ninja-build (1.10.1-1) ...
+2026-05-29T15:49:13.8988427Z Setting up dh-elpa-helper (2.0.9ubuntu1) ...
+2026-05-29T15:49:13.9018221Z Setting up clang (1:14.0-55~exp2) ...
+2026-05-29T15:49:13.9324999Z Setting up libjsoncpp25:amd64 (1.9.5-3) ...
+2026-05-29T15:49:13.9395915Z Setting up librhash0:amd64 (1.4.2-1ubuntu1) ...
+2026-05-29T15:49:13.9427643Z Setting up cmake-data (3.22.1-1ubuntu1.22.04.2) ...
+2026-05-29T15:49:14.0102982Z Setting up libhiredis0.14:amd64 (0.14.1-2) ...
+2026-05-29T15:49:14.0131398Z Setting up ccache (4.5.1-1) ...
+2026-05-29T15:49:14.0163732Z Updating symlinks in /usr/lib/ccache ...
+2026-05-29T15:49:14.0258861Z Setting up cmake (3.22.1-1ubuntu1.22.04.2) ...
+2026-05-29T15:49:14.0294770Z Processing triggers for man-db (2.10.2-1) ...
+2026-05-29T15:49:14.0328267Z Not building database; man-db/auto-update is not 'true'.
+2026-05-29T15:49:14.0345056Z Processing triggers for libc-bin (2.35-0ubuntu3.13) ...
+2026-05-29T15:49:14.6777425Z 
+2026-05-29T15:49:14.6778319Z Running kernel seems to be up-to-date.
+2026-05-29T15:49:14.6779149Z 
+2026-05-29T15:49:14.6779532Z No services need to be restarted.
+2026-05-29T15:49:14.6780033Z 
+2026-05-29T15:49:14.6780561Z No containers need to be restarted.
+2026-05-29T15:49:14.6781076Z 
+2026-05-29T15:49:14.6781531Z No user sessions are running outdated binaries.
+2026-05-29T15:49:14.6782096Z 
+2026-05-29T15:49:14.6782689Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-05-29T15:49:16.0810021Z === VERIFYING DEPENDENCY VERSIONS ===
+2026-05-29T15:49:16.7934292Z cmake version 3.31.6
+2026-05-29T15:49:16.7934897Z 
+2026-05-29T15:49:16.7935483Z CMake suite maintained and supported by Kitware (kitware.com/cmake).
+2026-05-29T15:49:16.8115034Z 1.13.2
+2026-05-29T15:49:17.5858865Z Ubuntu clang version 14.0.0-1ubuntu1.1
+2026-05-29T15:49:17.5860117Z Target: x86_64-pc-linux-gnu
+2026-05-29T15:49:17.5860717Z Thread model: posix
+2026-05-29T15:49:17.5861219Z InstalledDir: /usr/bin
+2026-05-29T15:49:17.7603488Z Ubuntu LLD 14.0.0 (compatible with GNU linkers)
+2026-05-29T15:49:17.7651704Z ccache version 4.5.1
+2026-05-29T15:49:17.7652448Z Features: file-storage http-storage redis-storage
+2026-05-29T15:49:17.7653035Z 
+2026-05-29T15:49:17.7653395Z Copyright (C) 2002-2007 Andrew Tridgell
+2026-05-29T15:49:17.7654814Z Copyright (C) 2009-2021 Joel Rosdahl and other contributors
+2026-05-29T15:49:17.7655470Z 
+2026-05-29T15:49:17.7656175Z See <https://ccache.dev/credits.html> for a complete list of contributors.
+2026-05-29T15:49:17.7656961Z 
+2026-05-29T15:49:17.7657484Z This program is free software; you can redistribute it and/or modify it under
+2026-05-29T15:49:17.7658513Z the terms of the GNU General Public License as published by the Free Software
+2026-05-29T15:49:17.7659756Z Foundation; either version 3 of the License, or (at your option) any later
+2026-05-29T15:49:17.7660478Z version.
+2026-05-29T15:49:17.7755132Z git version 2.54.0
+2026-05-29T15:49:17.7772010Z Python 3.10.12
+2026-05-29T15:49:17.7816127Z ##[group]Run echo "=== NETWORK CONNECTIVITY (GitHub / LLVM) ==="
+2026-05-29T15:49:17.7816715Z [36;1mecho "=== NETWORK CONNECTIVITY (GitHub / LLVM) ==="[0m
+2026-05-29T15:49:17.7817231Z [36;1mcurl -I https://github.com/llvm/llvm-project[0m
+2026-05-29T15:49:17.7872718Z shell: /usr/bin/bash -e {0}
+2026-05-29T15:49:17.7873256Z ##[endgroup]
+2026-05-29T15:49:17.7949763Z === NETWORK CONNECTIVITY (GitHub / LLVM) ===
+2026-05-29T15:49:17.8197736Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-05-29T15:49:17.8199175Z                                  Dload  Upload   Total   Spent    Left  Speed
+2026-05-29T15:49:17.8199950Z 
+2026-05-29T15:49:18.0231482Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-05-29T15:49:19.0243506Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-05-29T15:49:19.1043928Z   0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+2026-05-29T15:49:19.1045743Z HTTP/2 200 
+2026-05-29T15:49:19.1046675Z   0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+2026-05-29T15:49:19.1048270Z date: Fri, 29 May 2026 15:49:19 GMT
+2026-05-29T15:49:19.1049582Z content-type: text/html; charset=utf-8
+2026-05-29T15:49:19.1051507Z vary: X-PJAX, X-PJAX-Container, Turbo-Visit, Turbo-Frame, X-Requested-With, Sec-Fetch-Site,Accept-Encoding, Accept, X-Requested-With
+2026-05-29T15:49:19.1053057Z etag: W/"62305b832452c1bafe192b505820b5f2"
+2026-05-29T15:49:19.1053711Z cache-control: max-age=0, private, must-revalidate
+2026-05-29T15:49:19.1054330Z strict-transport-security: max-age=31536000; includeSubdomains; preload
+2026-05-29T15:49:19.1054902Z x-frame-options: deny
+2026-05-29T15:49:19.1055361Z x-content-type-options: nosniff
+2026-05-29T15:49:19.1055717Z x-xss-protection: 0
+2026-05-29T15:49:19.1056062Z referrer-policy: no-referrer-when-downgrade
+2026-05-29T15:49:19.1073298Z content-security-policy: default-src 'none'; base-uri 'self'; child-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/; connect-src 'self' uploads.github.com www.githubstatus.com collector.github.com raw.githubusercontent.com api.github.com github-cloud.s3.amazonaws.com github-production-repository-file-5c1aeb.s3.amazonaws.com github-production-upload-manifest-file-7fdce7.s3.amazonaws.com github-production-user-asset-6210df.s3.amazonaws.com *.rel.tunnels.api.visualstudio.com wss://*.rel.tunnels.api.visualstudio.com github.githubassets.com objects-origin.githubusercontent.com copilot-proxy.githubusercontent.com proxy.individual.githubcopilot.com proxy.business.githubcopilot.com proxy.enterprise.githubcopilot.com *.actions.githubusercontent.com wss://*.actions.githubusercontent.com productionresultssa0.blob.core.windows.net productionresultssa1.blob.core.windows.net productionresultssa2.blob.core.windows.net productionresultssa3.blob.core.windows.net productionresultssa4.blob.core.windows.net productionresultssa5.blob.core.windows.net productionresultssa6.blob.core.windows.net productionresultssa7.blob.core.windows.net productionresultssa8.blob.core.windows.net productionresultssa9.blob.core.windows.net productionresultssa10.blob.core.windows.net productionresultssa11.blob.core.windows.net productionresultssa12.blob.core.windows.net productionresultssa13.blob.core.windows.net productionresultssa14.blob.core.windows.net productionresultssa15.blob.core.windows.net productionresultssa16.blob.core.windows.net productionresultssa17.blob.core.windows.net productionresultssa18.blob.core.windows.net productionresultssa19.blob.core.windows.net github-production-repository-image-32fea6.s3.amazonaws.com github-production-release-asset-2e65be.s3.amazonaws.com insights.github.com wss://alive.github.com wss://alive-staging.github.com api.githubcopilot.com api.individual.githubcopilot.com api.business.githubcopilot.com api.enterprise.githubcopilot.com; font-src github.githubassets.com; form-action 'self' github.com gist.github.com copilot-workspace.githubnext.com objects-origin.githubusercontent.com; frame-ancestors 'none'; frame-src viewscreen.githubusercontent.com notebooks.githubusercontent.com; img-src 'self' data: blob: github.githubassets.com media.githubusercontent.com camo.githubusercontent.com identicons.github.com avatars.githubusercontent.com private-avatars.githubusercontent.com github-cloud.s3.amazonaws.com objects.githubusercontent.com release-assets.githubusercontent.com secured-user-images.githubusercontent.com user-images.githubusercontent.com private-user-images.githubusercontent.com opengraph.githubassets.com marketplace-screenshots.githubusercontent.com copilotprodattachments.blob.core.windows.net/github-production-copilot-attachments/ github-production-user-asset-6210df.s3.amazonaws.com customer-stories-feed.github.com spotlights-feed.github.com explore-feed.github.com objects-origin.githubusercontent.com *.githubusercontent.com; manifest-src 'self'; media-src github.com user-images.githubusercontent.com secured-user-images.githubusercontent.com private-user-images.githubusercontent.com github-production-user-asset-6210df.s3.amazonaws.com gist.github.com github.githubassets.com; script-src github.githubassets.com; style-src 'unsafe-inline' github.githubassets.com; upgrade-insecure-requests; worker-src github.githubassets.com github.com/assets-cdn/worker/ github.com/assets/ gist.github.com/assets-cdn/worker/
+2026-05-29T15:49:19.1093184Z server: github.com
+2026-05-29T15:49:19.1093401Z accept-ranges: bytes
+2026-05-29T15:49:19.1095285Z set-cookie: _gh_sess=YkKVRkNJmj5HyDijSTqLscRA8989BVccY8szZi5KBJHXgi52QsShzy0R6snf5%2BBWEoaHwZiqE14AN687Ei6LcHMgNSMimOJw0XpJAGZAEnfl44ZJMMEsE%2FlUjTTbjYxlKmFq%2Bk6rploXK1jeWYZSc%2BYvkYVrn6zVYT6S5CcOghzazhgGIm08%2FK1i7Pa2S1bVHqa5EUNbaWmGldSdj02vuB9vNEoKxc95hkH4JLlRIcj9pN%2FxXej5XPw23gkUnPEyTYT25RI7qlWSFUPYmJGdJw%3D%3D--trSVvl7k0UOUe2%2FM--GqrtTEZz6jqEC%2F2GigQpQA%3D%3D; path=/; HttpOnly; secure; SameSite=Lax
+2026-05-29T15:49:19.1097307Z set-cookie: _octo=GH1.1.1242179216.1780069757; expires=Sat, 29 May 2027 15:49:17 GMT; domain=.github.com; path=/; secure; SameSite=Lax
+2026-05-29T15:49:19.1098116Z set-cookie: logged_in=no; expires=Sat, 29 May 2027 15:49:17 GMT; domain=.github.com; path=/; HttpOnly; secure; SameSite=Lax
+2026-05-29T15:49:19.1098679Z x-github-request-id: C038:190705:5644E21:575E96E:6A19B57D
+2026-05-29T15:49:19.1098919Z 
+2026-05-29T15:49:19.1149943Z Cleaning up orphan processes

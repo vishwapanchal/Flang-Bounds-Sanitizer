@@ -1,0 +1,166 @@
+﻿2026-05-29T15:50:11.4542591Z ##[group]Run actions/checkout@v4
+2026-05-29T15:50:11.4542747Z with:
+2026-05-29T15:50:11.4542974Z   repository: llvm/llvm-project
+2026-05-29T15:50:11.4543120Z   path: llvm-project
+2026-05-29T15:50:11.4543253Z   fetch-depth: 1
+2026-05-29T15:50:11.4544893Z   token: ***
+2026-05-29T15:50:11.4545006Z   ssh-strict: true
+2026-05-29T15:50:11.4545123Z   ssh-user: git
+2026-05-29T15:50:11.4545245Z   persist-credentials: true
+2026-05-29T15:50:11.4545378Z   clean: true
+2026-05-29T15:50:11.4545515Z   sparse-checkout-cone-mode: true
+2026-05-29T15:50:11.4545662Z   fetch-tags: false
+2026-05-29T15:50:11.4545783Z   show-progress: true
+2026-05-29T15:50:11.4545907Z   lfs: false
+2026-05-29T15:50:11.4546017Z   submodules: false
+2026-05-29T15:50:11.4546139Z   set-safe-directory: true
+2026-05-29T15:50:11.4546274Z ##[endgroup]
+2026-05-29T15:50:11.5078066Z Syncing repository: llvm/llvm-project
+2026-05-29T15:50:11.5081770Z ##[group]Getting Git version info
+2026-05-29T15:50:11.5082182Z Working directory is '/home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/llvm-project'
+2026-05-29T15:50:11.5102419Z [command]/usr/bin/git version
+2026-05-29T15:50:11.5121309Z git version 2.54.0
+2026-05-29T15:50:11.5134390Z ##[endgroup]
+2026-05-29T15:50:11.5144820Z Temporarily overriding HOME='/home/runner/work/_temp/cedc5764-bc31-4253-80bd-fab105449a10' before making global git config changes
+2026-05-29T15:50:11.5145255Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-29T15:50:11.5148019Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/llvm-project
+2026-05-29T15:50:11.5161420Z ##[group]Initializing the repository
+2026-05-29T15:50:11.5164528Z [command]/usr/bin/git init /home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/llvm-project
+2026-05-29T15:50:11.5179171Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-29T15:50:11.5179593Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-29T15:50:11.5179996Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-29T15:50:11.5180273Z hint: call:
+2026-05-29T15:50:11.5180395Z hint:
+2026-05-29T15:50:11.5180579Z hint: 	git config --global init.defaultBranch <name>
+2026-05-29T15:50:11.5180773Z hint:
+2026-05-29T15:50:11.5180943Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-29T15:50:11.5181233Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-29T15:50:11.5181477Z hint:
+2026-05-29T15:50:11.5181608Z hint: 	git branch -m <name>
+2026-05-29T15:50:11.5181780Z hint:
+2026-05-29T15:50:11.5181960Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-29T15:50:11.5182342Z Initialized empty Git repository in /home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/llvm-project/.git/
+2026-05-29T15:50:11.5185522Z [command]/usr/bin/git remote add origin https://github.com/llvm/llvm-project
+2026-05-29T15:50:11.5201297Z ##[endgroup]
+2026-05-29T15:50:11.5201666Z ##[group]Disabling automatic garbage collection
+2026-05-29T15:50:11.5204002Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-29T15:50:11.5216487Z ##[endgroup]
+2026-05-29T15:50:11.5216798Z ##[group]Setting up auth
+2026-05-29T15:50:11.5220296Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-29T15:50:11.5233229Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-29T15:50:11.5327203Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-29T15:50:11.5339638Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-29T15:50:11.5429965Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-29T15:50:11.5444647Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-29T15:50:11.5536689Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-29T15:50:11.5551663Z ##[endgroup]
+2026-05-29T15:50:11.5551995Z ##[group]Determining the default branch
+2026-05-29T15:50:11.5553589Z Retrieving the default branch name
+2026-05-29T15:50:12.0593458Z Default branch 'main'
+2026-05-29T15:50:12.0594034Z ##[endgroup]
+2026-05-29T15:50:12.0594367Z ##[group]Fetching the repository
+2026-05-29T15:50:12.0599173Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+2026-05-29T15:50:38.1487677Z From https://github.com/llvm/llvm-project
+2026-05-29T15:50:38.1488054Z  * [new branch]          main       -> origin/main
+2026-05-29T15:50:38.1500849Z ##[endgroup]
+2026-05-29T15:50:38.1501178Z ##[group]Determining the checkout info
+2026-05-29T15:50:38.1502841Z ##[endgroup]
+2026-05-29T15:50:38.1506914Z [command]/usr/bin/git sparse-checkout disable
+2026-05-29T15:50:38.1527012Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-05-29T15:50:38.1539304Z ##[group]Checking out the ref
+2026-05-29T15:50:38.1542314Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-05-29T15:50:39.2692657Z Updating files:  17% (30999/177109)
+2026-05-29T15:50:39.3006065Z Updating files:  18% (31880/177109)
+2026-05-29T15:50:39.3873076Z Updating files:  19% (33651/177109)
+2026-05-29T15:50:39.4178500Z Updating files:  20% (35422/177109)
+2026-05-29T15:50:39.4620821Z Updating files:  21% (37193/177109)
+2026-05-29T15:50:39.5122785Z Updating files:  22% (38964/177109)
+2026-05-29T15:50:39.5639152Z Updating files:  23% (40736/177109)
+2026-05-29T15:50:39.5902183Z Updating files:  24% (42507/177109)
+2026-05-29T15:50:39.6511936Z Updating files:  25% (44278/177109)
+2026-05-29T15:50:39.6877496Z Updating files:  26% (46049/177109)
+2026-05-29T15:50:39.7138697Z Updating files:  27% (47820/177109)
+2026-05-29T15:50:39.7420765Z Updating files:  28% (49591/177109)
+2026-05-29T15:50:39.7993438Z Updating files:  29% (51362/177109)
+2026-05-29T15:50:39.8198969Z Updating files:  30% (53133/177109)
+2026-05-29T15:50:39.8433550Z Updating files:  31% (54904/177109)
+2026-05-29T15:50:39.8668962Z Updating files:  32% (56675/177109)
+2026-05-29T15:50:39.9045498Z Updating files:  33% (58446/177109)
+2026-05-29T15:50:39.9432586Z Updating files:  34% (60218/177109)
+2026-05-29T15:50:40.0167235Z Updating files:  35% (61989/177109)
+2026-05-29T15:50:40.0436923Z Updating files:  36% (63760/177109)
+2026-05-29T15:50:40.0707055Z Updating files:  37% (65531/177109)
+2026-05-29T15:50:40.1017355Z Updating files:  38% (67302/177109)
+2026-05-29T15:50:40.1524777Z Updating files:  39% (69073/177109)
+2026-05-29T15:50:40.2003010Z Updating files:  40% (70844/177109)
+2026-05-29T15:50:40.2270438Z Updating files:  41% (72615/177109)
+2026-05-29T15:50:40.2283559Z Updating files:  42% (74386/177109)
+2026-05-29T15:50:40.2657740Z Updating files:  42% (74472/177109)
+2026-05-29T15:50:40.3256954Z Updating files:  43% (76157/177109)
+2026-05-29T15:50:40.3605078Z Updating files:  44% (77928/177109)
+2026-05-29T15:50:40.8224193Z Updating files:  45% (79700/177109)
+2026-05-29T15:50:40.8539460Z Updating files:  46% (81471/177109)
+2026-05-29T15:50:40.9259994Z Updating files:  47% (83242/177109)
+2026-05-29T15:50:40.9963319Z Updating files:  48% (85013/177109)
+2026-05-29T15:50:41.0639346Z Updating files:  49% (86784/177109)
+2026-05-29T15:50:41.1736619Z Updating files:  50% (88555/177109)
+2026-05-29T15:50:41.2287226Z Updating files:  51% (90326/177109)
+2026-05-29T15:50:41.2925791Z Updating files:  51% (90963/177109)
+2026-05-29T15:50:41.4162480Z Updating files:  52% (92097/177109)
+2026-05-29T15:50:41.4653256Z Updating files:  53% (93868/177109)
+2026-05-29T15:50:41.5048854Z Updating files:  54% (95639/177109)
+2026-05-29T15:50:41.5547999Z Updating files:  55% (97410/177109)
+2026-05-29T15:50:41.6239401Z Updating files:  56% (99182/177109)
+2026-05-29T15:50:41.8158040Z Updating files:  57% (100953/177109)
+2026-05-29T15:50:42.2285670Z Updating files:  58% (102724/177109)
+2026-05-29T15:50:42.2522044Z Updating files:  58% (103981/177109)
+2026-05-29T15:50:42.3171562Z Updating files:  59% (104495/177109)
+2026-05-29T15:50:42.3494282Z Updating files:  60% (106266/177109)
+2026-05-29T15:50:42.3844380Z Updating files:  61% (108037/177109)
+2026-05-29T15:50:42.4128138Z Updating files:  62% (109808/177109)
+2026-05-29T15:50:42.4530234Z Updating files:  63% (111579/177109)
+2026-05-29T15:50:42.4960666Z Updating files:  64% (113350/177109)
+2026-05-29T15:50:42.5835731Z Updating files:  65% (115121/177109)
+2026-05-29T15:50:42.6322103Z Updating files:  66% (116892/177109)
+2026-05-29T15:50:42.6746278Z Updating files:  67% (118664/177109)
+2026-05-29T15:50:42.7117914Z Updating files:  68% (120435/177109)
+2026-05-29T15:50:42.7705383Z Updating files:  69% (122206/177109)
+2026-05-29T15:50:42.8193905Z Updating files:  70% (123977/177109)
+2026-05-29T15:50:42.9839491Z Updating files:  71% (125748/177109)
+2026-05-29T15:50:43.0214995Z Updating files:  72% (127519/177109)
+2026-05-29T15:50:43.0615874Z Updating files:  73% (129290/177109)
+2026-05-29T15:50:43.0872469Z Updating files:  74% (131061/177109)
+2026-05-29T15:50:43.1909141Z Updating files:  75% (132832/177109)
+2026-05-29T15:50:43.2286518Z Updating files:  76% (134603/177109)
+2026-05-29T15:50:43.2626277Z Updating files:  76% (135023/177109)
+2026-05-29T15:50:43.2942543Z Updating files:  77% (136374/177109)
+2026-05-29T15:50:43.3399266Z Updating files:  78% (138146/177109)
+2026-05-29T15:50:43.4190627Z Updating files:  79% (139917/177109)
+2026-05-29T15:50:43.4542123Z Updating files:  80% (141688/177109)
+2026-05-29T15:50:43.5022851Z Updating files:  81% (143459/177109)
+2026-05-29T15:50:43.5438299Z Updating files:  82% (145230/177109)
+2026-05-29T15:50:43.6001935Z Updating files:  83% (147001/177109)
+2026-05-29T15:50:43.6481848Z Updating files:  84% (148772/177109)
+2026-05-29T15:50:43.6860227Z Updating files:  85% (150543/177109)
+2026-05-29T15:50:43.7156867Z Updating files:  86% (152314/177109)
+2026-05-29T15:50:43.8132610Z Updating files:  87% (154085/177109)
+2026-05-29T15:50:43.8888769Z Updating files:  88% (155856/177109)
+2026-05-29T15:50:43.9718833Z Updating files:  89% (157628/177109)
+2026-05-29T15:50:44.0385182Z Updating files:  90% (159399/177109)
+2026-05-29T15:50:44.0995701Z Updating files:  91% (161170/177109)
+2026-05-29T15:50:44.1686580Z Updating files:  92% (162941/177109)
+2026-05-29T15:50:44.2284103Z Updating files:  93% (164712/177109)
+2026-05-29T15:50:44.2301629Z Updating files:  93% (166433/177109)
+2026-05-29T15:50:44.2957479Z Updating files:  94% (166483/177109)
+2026-05-29T15:50:44.3423070Z Updating files:  95% (168254/177109)
+2026-05-29T15:50:44.3843467Z Updating files:  96% (170025/177109)
+2026-05-29T15:50:44.4372130Z Updating files:  97% (171796/177109)
+2026-05-29T15:50:44.4781349Z Updating files:  98% (173567/177109)
+2026-05-29T15:50:44.5491925Z Updating files:  99% (175338/177109)
+2026-05-29T15:50:44.5492202Z Updating files: 100% (177109/177109)
+2026-05-29T15:50:44.5492462Z Updating files: 100% (177109/177109), done.
+2026-05-29T15:50:44.6568497Z Switched to a new branch 'main'
+2026-05-29T15:50:44.6568859Z branch 'main' set up to track 'origin/main'.
+2026-05-29T15:50:44.6625573Z ##[endgroup]
+2026-05-29T15:50:44.6651379Z [command]/usr/bin/git log -1 --format=%H
+2026-05-29T15:50:44.6662821Z 6c9542c3f99e5cc8cdba8122b36323370fcf6d95

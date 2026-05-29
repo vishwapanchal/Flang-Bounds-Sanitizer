@@ -1,0 +1,74 @@
+﻿2026-05-29T15:51:13.2670113Z ##[group]Run hendrikmuhs/ccache-action@v1.2
+2026-05-29T15:51:13.2670295Z with:
+2026-05-29T15:51:13.2670444Z   key: Linux-flang-b3306148e2e813a452f9272f8f9124c7ce684b2b
+2026-05-29T15:51:13.2670630Z   restore-keys: Linux-flang-
+
+2026-05-29T15:51:13.2670764Z   max-size: 5G
+2026-05-29T15:51:13.2670870Z   restore: true
+2026-05-29T15:51:13.2670974Z   verbose: 0
+2026-05-29T15:51:13.2671076Z   variant: ccache
+2026-05-29T15:51:13.2671184Z   save: true
+2026-05-29T15:51:13.2671293Z   append-timestamp: true
+2026-05-29T15:51:13.2671419Z   create-symlink: false
+2026-05-29T15:51:13.2671544Z   job-summary: CCache Statistics
+2026-05-29T15:51:13.2671776Z   update-package-index: false
+2026-05-29T15:51:13.2671908Z ##[endgroup]
+2026-05-29T15:51:13.3349810Z ##[group]Restore cache
+2026-05-29T15:51:13.5649901Z No cache found.
+2026-05-29T15:51:13.5650490Z ##[endgroup]
+2026-05-29T15:51:13.5650898Z ##[group]Configure ccache, linux
+2026-05-29T15:51:13.5658319Z [command]/usr/bin/sh -xc ccache --set-config=cache_dir='/home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/.ccache'
+2026-05-29T15:51:13.5670995Z + ccache --set-config=cache_dir=/home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/.ccache
+2026-05-29T15:51:13.5690247Z [command]/usr/bin/sh -xc ccache --set-config=max_size='5G'
+2026-05-29T15:51:13.5697563Z + ccache --set-config=max_size=5G
+2026-05-29T15:51:13.5712842Z [command]/usr/bin/sh -xc ccache --set-config=compression=true
+2026-05-29T15:51:13.5721019Z + ccache --set-config=compression=true
+2026-05-29T15:51:13.5730307Z Ccache config:
+2026-05-29T15:51:13.5735107Z [command]/usr/bin/sh -xc ccache -p
+2026-05-29T15:51:13.5743190Z + ccache -p
+2026-05-29T15:51:13.5748925Z (default) absolute_paths_in_stderr = false
+2026-05-29T15:51:13.5749185Z (default) base_dir = 
+2026-05-29T15:51:13.5749501Z (/home/runner/.config/ccache/ccache.conf) cache_dir = /home/runner/work/Flang-Bounds-Sanitizer/Flang-Bounds-Sanitizer/.ccache
+2026-05-29T15:51:13.5749908Z (default) compiler = 
+2026-05-29T15:51:13.5750038Z (default) compiler_check = mtime
+2026-05-29T15:51:13.5750191Z (default) compiler_type = auto
+2026-05-29T15:51:13.5750360Z (/home/runner/.config/ccache/ccache.conf) compression = true
+2026-05-29T15:51:13.5750543Z (default) compression_level = 0
+2026-05-29T15:51:13.5750682Z (default) cpp_extension = 
+2026-05-29T15:51:13.5750808Z (default) debug = false
+2026-05-29T15:51:13.5750945Z (default) debug_dir = 
+2026-05-29T15:51:13.5751071Z (default) depend_mode = false
+2026-05-29T15:51:13.5751206Z (default) direct_mode = true
+2026-05-29T15:51:13.5751338Z (default) disable = false
+2026-05-29T15:51:13.5751467Z (default) extra_files_to_hash = 
+2026-05-29T15:51:13.5751605Z (default) file_clone = false
+2026-05-29T15:51:13.5751734Z (default) hard_link = false
+2026-05-29T15:51:13.5751863Z (default) hash_dir = true
+2026-05-29T15:51:13.5751994Z (default) ignore_headers_in_manifest = 
+2026-05-29T15:51:13.5752138Z (default) ignore_options = 
+2026-05-29T15:51:13.5752266Z (default) inode_cache = false
+2026-05-29T15:51:13.5752401Z (default) keep_comments_cpp = false
+2026-05-29T15:51:13.5752549Z (default) limit_multiple = 0.8
+2026-05-29T15:51:13.5752679Z (default) log_file = 
+2026-05-29T15:51:13.5752796Z (default) max_files = 0
+2026-05-29T15:51:13.5752943Z (/home/runner/.config/ccache/ccache.conf) max_size = 5.0G
+2026-05-29T15:51:13.5753113Z (default) namespace = 
+2026-05-29T15:51:13.5753231Z (default) path = 
+2026-05-29T15:51:13.5753359Z (default) pch_external_checksum = false
+2026-05-29T15:51:13.5753507Z (default) prefix_command = 
+2026-05-29T15:51:13.5753637Z (default) prefix_command_cpp = 
+2026-05-29T15:51:13.5753772Z (default) read_only = false
+2026-05-29T15:51:13.5753903Z (default) read_only_direct = false
+2026-05-29T15:51:13.5754043Z (default) recache = false
+2026-05-29T15:51:13.5754170Z (default) reshare = false
+2026-05-29T15:51:13.5754296Z (default) run_second_cpp = true
+2026-05-29T15:51:13.5754430Z (default) secondary_storage = 
+2026-05-29T15:51:13.5754560Z (default) sloppiness = 
+2026-05-29T15:51:13.5754679Z (default) stats = true
+2026-05-29T15:51:13.5754931Z (default) stats_log = 
+2026-05-29T15:51:13.5755072Z (default) temporary_dir = /run/user/1001/ccache-tmp
+2026-05-29T15:51:13.5755232Z (default) umask = 
+2026-05-29T15:51:13.5769013Z [command]/usr/bin/sh -xc ccache -z
+2026-05-29T15:51:13.5776422Z + ccache -z
+2026-05-29T15:51:13.5856328Z Statistics zeroed
+2026-05-29T15:51:13.5859299Z ##[endgroup]

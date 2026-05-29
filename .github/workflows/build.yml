@@ -122,10 +122,10 @@ jobs:
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ runner.os }}-flang-${{ github.sha }}
+          key: ${{ runner.os }}-flang
           restore-keys: |
             ${{ runner.os }}-flang-
-          max-size: 5G
+          max-size: 10G
 
       - name: Integrate project into LLVM tree
         run: |

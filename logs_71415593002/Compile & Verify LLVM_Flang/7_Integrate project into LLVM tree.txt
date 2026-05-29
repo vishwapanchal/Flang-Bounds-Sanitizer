@@ -1,0 +1,45 @@
+﻿2026-05-29T15:51:13.5897771Z ##[group]Run set -euxo pipefail
+2026-05-29T15:51:13.5897962Z [36;1mset -euxo pipefail[0m
+2026-05-29T15:51:13.5898123Z [36;1m[0m
+2026-05-29T15:51:13.5898260Z [36;1m# Instrumentation pass[0m
+2026-05-29T15:51:13.5898448Z [36;1mcp project/src/pass/BoundsCheckInstrumentation.cpp \[0m
+2026-05-29T15:51:13.5898737Z [36;1m   llvm-project/flang/lib/Optimizer/Transforms/[0m
+2026-05-29T15:51:13.5899044Z [36;1mcp project/src/pass/BoundsCheckInstrumentation.h \[0m
+2026-05-29T15:51:13.5899281Z [36;1m   llvm-project/flang/include/flang/Optimizer/Transforms/[0m
+2026-05-29T15:51:13.5899547Z [36;1msed -i '/add_flang_library(FIRTransforms/a\  BoundsCheckInstrumentation.cpp' \[0m
+2026-05-29T15:51:13.5900051Z [36;1m   llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt[0m
+2026-05-29T15:51:13.5900235Z [36;1m[0m
+2026-05-29T15:51:13.5900363Z [36;1m# Runtime library[0m
+2026-05-29T15:51:13.5900552Z [36;1mRUNTIME_DIR=$(find llvm-project -type d \[0m
+2026-05-29T15:51:13.5900770Z [36;1m    \( -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" \) \[0m
+2026-05-29T15:51:13.5900986Z [36;1m    | head -n 1)[0m
+2026-05-29T15:51:13.5901208Z [36;1mcp project/src/runtime/bounds-check.cpp "$RUNTIME_DIR/"[0m
+2026-05-29T15:51:13.5901430Z [36;1mcp project/src/runtime/bounds-check.h   "$RUNTIME_DIR/"[0m
+2026-05-29T15:51:13.5901642Z [36;1mif echo "$RUNTIME_DIR" | grep -q "flang-rt"; then[0m
+2026-05-29T15:51:13.5901903Z [36;1m  sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' \[0m
+2026-05-29T15:51:13.5902131Z [36;1m      "$RUNTIME_DIR/CMakeLists.txt"[0m
+2026-05-29T15:51:13.5902277Z [36;1melse[0m
+2026-05-29T15:51:13.5902442Z [36;1m  sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' \[0m
+2026-05-29T15:51:13.5902689Z [36;1m      "$RUNTIME_DIR/CMakeLists.txt"[0m
+2026-05-29T15:51:13.5902838Z [36;1mfi[0m
+2026-05-29T15:51:13.5902943Z [36;1m[0m
+2026-05-29T15:51:13.5903050Z [36;1m# Pipeline patch[0m
+2026-05-29T15:51:13.5903273Z [36;1msed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' \[0m
+2026-05-29T15:51:13.5903610Z [36;1m    llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp[0m
+2026-05-29T15:51:13.5903921Z [36;1msed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' \[0m
+2026-05-29T15:51:13.5904286Z [36;1m    llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp[0m
+2026-05-29T15:51:13.5931721Z shell: /usr/bin/bash -e {0}
+2026-05-29T15:51:13.5931868Z ##[endgroup]
+2026-05-29T15:51:13.5954479Z + cp project/src/pass/BoundsCheckInstrumentation.cpp llvm-project/flang/lib/Optimizer/Transforms/
+2026-05-29T15:51:13.5964691Z + cp project/src/pass/BoundsCheckInstrumentation.h llvm-project/flang/include/flang/Optimizer/Transforms/
+2026-05-29T15:51:13.5972374Z + sed -i '/add_flang_library(FIRTransforms/a\  BoundsCheckInstrumentation.cpp' llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
+2026-05-29T15:51:13.5981524Z ++ find llvm-project -type d '(' -path '*/flang-rt/lib/runtime' -o -path '*/flang/runtime' ')'
+2026-05-29T15:51:13.5981897Z ++ head -n 1
+2026-05-29T15:51:13.9413121Z + RUNTIME_DIR=llvm-project/flang-rt/lib/runtime
+2026-05-29T15:51:13.9413562Z + cp project/src/runtime/bounds-check.cpp llvm-project/flang-rt/lib/runtime/
+2026-05-29T15:51:13.9423349Z + cp project/src/runtime/bounds-check.h llvm-project/flang-rt/lib/runtime/
+2026-05-29T15:51:13.9431072Z + echo llvm-project/flang-rt/lib/runtime
+2026-05-29T15:51:13.9431582Z + grep -q flang-rt
+2026-05-29T15:51:13.9437784Z + sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' llvm-project/flang-rt/lib/runtime/CMakeLists.txt
+2026-05-29T15:51:13.9446027Z + sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
+2026-05-29T15:51:13.9454783Z + sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
