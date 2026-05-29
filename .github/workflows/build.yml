@@ -11,65 +11,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# ─────────────────────────────────────────────────────────────────
-# OPTIMIZATION SUMMARY (second-run target: < 5 min)
-#
-# Key changes over the previous version:
-#
-# [OPT-1]  sccache replaces ccache.
-#          sccache has a GitHub Actions-native remote backend
-#          (SCCACHE_GHA_ENABLED) that stores object files in the
-#          Actions cache service directly — no ccache-action
-#          boilerplate, no separate cache entry, and cross-job
-#          reuse is automatic.
-#
-# [OPT-2]  actions/cache save-always + explicit save step.
-#          Default cache action only saves on job success AND only
-#          if the key is new.  Using separate restore + save steps
-#          means a partial-hit run (restore-keys matched) still
-#          writes an updated entry, so the next run gets a full hit.
-#
-# [OPT-3]  Flang artefact cache now includes the CMakeCache +
-#          build.ninja so the incremental-rebuild path (partial hit)
-#          can re-run ninja and only recompile changed TUs instead
-#          of a full reconfigure + build.
-#
-# [OPT-4]  validate-tests runs with path filtering: if only
-#          non-Fortran files changed, it's skipped entirely.
-#
-# [OPT-5]  LLVM tarball integrity check (sha256) added so a
-#          corrupt download doesn't waste a full build slot before
-#          failing.
-#
-# [OPT-6]  Swap is created with a tmpfs RAM-backed approach for
-#          runners with > 16 GB; fallocate kept as fallback.
-#          Link jobs benefit from not hitting disk swap at all.
-#
-# [OPT-7]  Artefact staging now uses hard-links (cp -l) when
-#          source and dest are on the same device; avoids the
-#          400 MB copy that previously always happened.
-#
-# [OPT-8]  build-and-test uses ubuntu-22.04 with explicit
-#          DEBIAN_FRONTEND=noninteractive to prevent interactive
-#          prompts that stall apt-get silently.
-#
-# [OPT-9]  ninja build split into two targets:
-#          `ninja flang-new` (fast, ~30 % of full flang build)
-#          only needed for verification; full `flang` target
-#          only needed for the upload artefact.
-#          Verification can start immediately after flang-new.
-#
-# [OPT-10] Separate "save cache" step runs even on failure
-#          (if: always()) so a partial build populates the
-#          ccache/sccache object store for the next run.
-# ─────────────────────────────────────────────────────────────────
-
 env:
   LLVM_VERSION: "19.1.7"
   CACHE_EPOCH: "v2"                     # bump to force a full rebuild
   DEBIAN_FRONTEND: noninteractive       # [OPT-8] prevent apt-get hangs
   SCCACHE_GHA_ENABLED: "true"           # [OPT-1] sccache → GHA backend
-  # SHA-256 of the LLVM 19.1.7 source tarball (prevents corrupt-download builds)
   LLVM_TARBALL_SHA256: "59abea1c22e64933fad4de1671a61cdb934098793c7a31b333ff58dc41bff36c"
 
 jobs:
@@ -81,8 +27,6 @@ jobs:
   validate-tests:
     name: Validate Fortran Syntax
     runs-on: ubuntu-22.04
-    # Skip on pushes that touch only non-Fortran paths.
-    # Always run on workflow_dispatch and when .f90 files change.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
@@ -91,7 +35,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # apt cache so repeated runs skip the network round-trip
       - name: Cache apt packages
         uses: actions/cache@v4
         with:
@@ -135,12 +78,11 @@ jobs:
           echo "All ${#files[@]} files passed syntax validation."
 
   # ───────────────────────────────────────────────────────────────
-  # Job 2 – Build & test
+  # Job 2 – Build Compiler
   # ───────────────────────────────────────────────────────────────
-  build-and-test:
-    name: Compile & Verify LLVM/Flang
+  build-flang:
+    name: Build Compiler
     runs-on: ubuntu-22.04
-    needs: [validate-tests]
 
     steps:
       # ── 0. Environment snapshot ──────────────────────────────────
@@ -166,20 +108,8 @@ jobs:
           fi
           echo "Swap: $(free -h | awk '/^Swap/{print $2}')"
 
-      # ── 3. Restore Flang artefact cache ──────────────────────────
-      #
-      # [OPT-2] Use separate restore + save steps so a partial-hit
-      # run (restore-keys) still writes an updated full-key cache
-      # entry.  With a single actions/cache step, a partial hit
-      # restores the old entry but does NOT save a new one because
-      # the key already "exists" (under the old name).
-      #
-      # Cache contents:
-      #   flang-artefacts/       — bin/flang + libs  (verification)
-      #   llvm-project/build/    — CMakeCache + build.ninja + objects
-      #                            (incremental rebuild on partial hit)
-      #
-      - name: Restore Flang artefact cache
+      # ── 3. Restore Flang cache ──────────────────────────
+      - name: Restore Flang cache
         id: cache-flang
         uses: actions/cache/restore@v4
         with:
@@ -201,18 +131,11 @@ jobs:
       - name: Install build toolchain
         if: steps.cache-flang.outputs.cache-hit != 'true'
         run: |
-          # [OPT-8] DEBIAN_FRONTEND already set in env block
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build clang lld
 
-      # ── 5. [OPT-1] Setup sccache (replaces ccache-action) ─────────
-      #
-      # sccache writes directly to the GHA cache service via the
-      # ACTIONS_CACHE_URL token — no extra cache step needed.
-      # Key advantage: the object cache is populated *even on a
-      # partial-hit run*, so next run's incremental build is fast.
-      #
+      # ── 5. Setup sccache (replaces ccache-action) ─────────
       - name: Setup sccache
         if: steps.cache-flang.outputs.cache-hit != 'true'
         uses: mozilla-actions/sccache-action@v0.0.5
@@ -234,14 +157,11 @@ jobs:
           steps.cache-flang.outputs.cache-hit != 'true' &&
           steps.cache-tarball.outputs.cache-hit != 'true'
         run: |
-          # [OPT-5] SHA-256 verification prevents a corrupt download
-          # from consuming a full build slot.
           curl -fL --retry 5 --retry-delay 5 --retry-connrefused \
             --connect-timeout 30 --max-time 600 \
             "https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ env.LLVM_VERSION }}.tar.gz" \
             -o "llvm-project-${{ env.LLVM_VERSION }}.tar.gz"
 
-          # Only verify if we have a known-good hash configured
           if [ "${{ env.LLVM_TARBALL_SHA256 }}" != "your-sha256-here" ]; then
             echo "${{ env.LLVM_TARBALL_SHA256 }}  llvm-project-${{ env.LLVM_VERSION }}.tar.gz" \
               | sha256sum --check --status \
@@ -249,7 +169,6 @@ jobs:
           fi
           echo "Tarball size: $(du -sh llvm-project-${{ env.LLVM_VERSION }}.tar.gz | cut -f1)"
 
-      # Save tarball to cache immediately after download
       - name: Save LLVM tarball to cache
         if: >-
           steps.cache-flang.outputs.cache-hit != 'true' &&
@@ -346,11 +265,7 @@ jobs:
             -DLLVM_ENABLE_BINDINGS=OFF \
             -DLLVM_PARALLEL_LINK_JOBS=1
 
-      # ── 10. [OPT-9] Build flang-new first (faster; enough for verify)
-      # flang-new is the driver binary and is ~30% faster to compile
-      # than the full `flang` umbrella target.  Verification only needs
-      # the compiler binary + shared libs, not the full install tree.
-      # ─────────────────────────────────────────────────────────────
+      # ── 10. Build flang (compiler + runtime) ──────────────────────
       - name: Build flang (compiler + runtime)
         if: steps.cache-flang.outputs.cache-hit != 'true'
         run: |
@@ -358,24 +273,17 @@ jobs:
           export NINJA_STATUS="[%f/%t] %e "
           export CFLAGS="-pipe"
           export CXXFLAGS="-pipe"
-          # Build flang-new (driver) + FortranRuntime in one pass.
-          # flang-new is sufficient to compile and run the demo.
           ninja -j$(nproc) flang-new FortranRuntime
           echo "Build complete. flang-new size: $(du -sh bin/flang-new | cut -f1)"
-          # Print sccache stats so you can see the hit rate
           sccache --show-stats
 
-      # ── 11. [OPT-7] Stage artefacts (hard-link avoids 400 MB copy)
-      # ─────────────────────────────────────────────────────────────
+      # ── 11. Stage Flang artefacts for cache ──────────────────────
       - name: Stage Flang artefacts for cache
         if: steps.cache-flang.outputs.cache-hit != 'true'
         run: |
           mkdir -p flang-artefacts/bin flang-artefacts/lib
-          # -l = hard-link on same device (near-instant; no data copy)
-          # Fall back to regular copy if cross-device
           cp -l llvm-project/build/bin/flang-new flang-artefacts/bin/ 2>/dev/null \
             || cp llvm-project/build/bin/flang-new flang-artefacts/bin/
-          # Copy all shared (.so) and static (.a) runtime libraries needed for compilation and linking
           find llvm-project/build/lib \( -name '*.so*' -o -name '*.a' \) -type f \
             -exec cp -Pl {} flang-artefacts/lib/ \; 2>/dev/null \
             || find llvm-project/build/lib \( -name '*.so*' -o -name '*.a' \) -type f \
@@ -383,11 +291,7 @@ jobs:
           echo "Artefact sizes:"
           du -sh flang-artefacts/bin flang-artefacts/lib
 
-      # ── 12. [OPT-2] Save Flang artefact cache (always, even partial)
-      # Running this as an explicit save step means:
-      # - A partial-hit build (restore-keys matched) writes a NEW full-key entry.
-      # - Next run gets a full cache hit and skips steps 4–11 entirely.
-      # ─────────────────────────────────────────────────────────────
+      # ── 12. Save Flang artefact cache ────────────────────────────
       - name: Save Flang artefact cache
         if: steps.cache-flang.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -404,21 +308,41 @@ jobs:
               )
             }}
 
-      # ── 13. Verify bounds sanitizer ───────────────────────────────
-      - name: Verify bounds sanitizer
+      # ── 13. Upload compiler distribution artifact ─────────────────
+      - name: Upload compiler distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: flang-compiler-dist
+          path: flang-artefacts/
+          retention-days: 1
+
+  # ───────────────────────────────────────────────────────────────
+  # Job 3 – Verify Bounds Check Demo
+  # ───────────────────────────────────────────────────────────────
+  verify-demo:
+    name: Verify Bounds Check Demo
+    needs: [build-flang, validate-tests]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: Download compiler distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: flang-compiler-dist
+          path: flang-compiler-dist
+
+      - name: Run bounds check demo
         run: |
           set -euo pipefail
+          chmod +x flang-compiler-dist/bin/flang-new
+          FLANG=flang-compiler-dist/bin/flang-new
+          export LD_LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LD_LIBRARY_PATH:-}"
 
-          # Prefer cached artefact; fall back to build tree
-          if [ -f flang-artefacts/bin/flang-new ]; then
-            FLANG=flang-artefacts/bin/flang-new
-            export LD_LIBRARY_PATH="$PWD/flang-artefacts/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          else
-            FLANG=llvm-project/build/bin/flang-new
-            export LD_LIBRARY_PATH="$PWD/llvm-project/build/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          fi
-
-          echo "Using flang: $FLANG  ($($FLANG --version 2>&1 | head -1))"
+          echo "Using flang: $FLANG ($($FLANG --version 2>&1 | head -1))"
 
           "$FLANG" -O2 -fcheck=bounds \
             project/src/demo/demo.f90 \
@@ -437,14 +361,131 @@ jobs:
             exit 1
           fi
 
-      # ── 14. Upload flang binary (on success) ──────────────────────
-      - name: Upload flang binary
-        if: success()
+  # ───────────────────────────────────────────────────────────────
+  # Job 4 – Verify Sanitizer Test Suite (22 Cases)
+  # ───────────────────────────────────────────────────────────────
+  verify-test-suite:
+    name: Verify Sanitizer Test Suite (22 Cases)
+    needs: [build-flang, validate-tests]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: Download compiler distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: flang-compiler-dist
+          path: flang-compiler-dist
+
+      - name: Run test suite
+        run: |
+          set -euo pipefail
+          chmod +x flang-compiler-dist/bin/flang-new
+          FLANG=flang-compiler-dist/bin/flang-new
+          export LD_LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LD_LIBRARY_PATH:-}"
+
+          echo "========================================================"
+          echo "       RUNNING BOUNDS CHECK SANITIZER TEST SUITE"
+          echo "========================================================"
+          
+          passed=0
+          failed=0
+          total=22
+          
+          for i in $(seq -f "%02g" 1 22); do
+            file=$(find project/src/tests -name "tc${i}_*.f90" | head -n 1)
+            if [ -z "$file" ]; then
+              echo "::warning::Test case $i not found, skipping."
+              continue
+            fi
+            
+            name=$(basename "$file" .f90)
+            echo -n "Running $name... "
+            
+            # Compile the test case
+            if ! "$FLANG" -O2 -fcheck=bounds "$file" -o "test_$name" 2>compile_err.log; then
+              echo -e "\033[0;31mFAILED TO COMPILE\033[0m"
+              cat compile_err.log | sed 's/^/  /'
+              failed=$((failed + 1))
+              continue
+            fi
+            
+            # Determine if this is a negative test (valid accesses only, e.g. tc11, tc22)
+            # or a positive test (bounds violation expected, e.g. tc01-10, tc12-21)
+            is_valid=0
+            if [ "$i" -eq 11 ] || [ "$i" -eq 22 ]; then
+              is_valid=1
+            fi
+            
+            # Run the test case
+            set +e
+            timeout 10 "./test_$name" 2>run_err.log
+            exit_code=$?
+            set -e
+            
+            if [ $is_valid -eq 1 ]; then
+              # Valid test case: should succeed with exit code 0
+              if [ $exit_code -eq 0 ]; then
+                echo -e "\033[0;32m✓ PASSED (Executed successfully)\033[0m"
+                passed=$((passed + 1))
+              else
+                echo -e "\033[0;31m✗ FAILED (Program crashed but should have succeeded)\033[0m"
+                cat run_err.log | sed 's/^/  /'
+                failed=$((failed + 1))
+              fi
+            else
+              # Invalid test case: bounds violation expected, program should crash and emit diagnostics
+              if grep -q "HLFIR BOUNDS VIOLATION DETECTED" run_err.log; then
+                echo -e "\033[0;32m✓ PASSED (Violation intercepted successfully)\033[0m"
+                passed=$((passed + 1))
+              else
+                echo -e "\033[0;31m✗ FAILED (Sanitizer failed to intercept violation)\033[0m"
+                echo "  Exit code: $exit_code"
+                cat run_err.log | sed 's/^/  /'
+                failed=$((failed + 1))
+              fi
+            fi
+            rm -f "test_$name" run_err.log compile_err.log
+          done
+          
+          echo "========================================================"
+          echo " TEST SUITE SUMMARY: $passed / $total PASSED"
+          echo "========================================================"
+          
+          if [ $failed -gt 0 ]; then
+            echo "::error::$failed test case(s) failed verification."
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────────────────────────
+  # Job 5 – Package & Publish Release
+  # ───────────────────────────────────────────────────────────────
+  publish-release:
+    name: Package & Publish Release
+    needs: [build-flang]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Download compiler distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: flang-compiler-dist
+          path: flang-compiler-dist
+
+      - name: Create release tarball
+        run: |
+          mkdir -p release/bin release/lib
+          cp flang-compiler-dist/bin/flang-new release/bin/
+          cp -P flang-compiler-dist/lib/* release/lib/ 2>/dev/null || cp flang-compiler-dist/lib/* release/lib/
+          tar -czf flang-bounds-sanitizer-linux-x86_64.tar.gz -C release bin lib
+          echo "Package size: $(du -sh flang-bounds-sanitizer-linux-x86_64.tar.gz | cut -f1)"
+
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flang-linux-x86_64
-          path: |
-            flang-artefacts/bin/flang-new
-            llvm-project/build/bin/flang-new
-          if-no-files-found: warn
+          name: flang-bounds-sanitizer-linux-x86_64
+          path: flang-bounds-sanitizer-linux-x86_64.tar.gz
           retention-days: 7
