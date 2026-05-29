@@ -53,12 +53,4 @@ std::unique_ptr<mlir::Pass> createHLFIRBoundsCheckPass();
 
 } // namespace fir
 
-//===----------------------------------------------------------------------===//
-// Registration macro for use in PassRegistry
-//===----------------------------------------------------------------------===//
-
-#define GEN_PASS_DECL_HLFIR_BOUNDSCHECK
-#define GEN_PASS_REG_HLFIR_BOUNDSCHECK
-#include "flang/Optimizer/Transforms/Passes.h.inc"
-
 #endif // FLANG_OPTIMIZER_TRANSFORMS_BOUNDSCHECKINSTRUMENTATION_H

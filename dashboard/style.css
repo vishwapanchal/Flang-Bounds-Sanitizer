@@ -1,0 +1,964 @@
+/* ==========================================================================
+   Flang HLFIR Bounds Sanitizer — Precision Compiler Diagnostics Deck
+   Theme: 100% Light Theme (No dark elements)
+   Style: HPE / Cray High-Performance Computing (HPC) High-Density Interface
+   ========================================================================== */
+
+:root {
+    /* Chassis & Backdrops */
+    --bg-primary: #f1f5f9;         /* Slate 100 - metal chassis frame */
+    --bg-secondary: #ffffff;       /* Pure white - panel faceplates */
+    --bg-card: #ffffff;            /* Pure white panel background */
+    --border: #cbd5e1;             /* Slate 300 - sharp mechanical borders */
+    --border-hover: #94a3b8;       /* Slate 400 - tactile hovered borders */
+    --border-focus: #2563eb;       /* Cray Cobalt Blue - focus highlights */
+    
+    /* Text Palette */
+    --text-primary: #0f172a;       /* Slate 900 - high-contrast primary text */
+    --text-secondary: #334155;     /* Slate 700 - clean description copy */
+    --text-muted: #64748b;         /* Slate 500 - engineering labels */
+    
+    /* Scientific State Indicators (100% Light Theme High-Contrast) */
+    --accent-indigo: #2563eb;      /* Cray Cobalt - primary branding */
+    --accent-violet: #4f46e5;      /* Tech purple */
+    --accent-emerald: #15803d;     /* Deep compliance green (Pass) */
+    --accent-amber: #b45309;       /* Deep warning amber (Warning/Skip) */
+    --accent-rose: #be123c;        /* High-contrast red (OOB Violation) */
+    --accent-cyan: #0369a1;        /* Engineering Cyan */
+    --accent-blue: #1d4ed8;        /* Cray Deep Blue */
+    
+    /* Typography & Structure */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --radius: 4px;                 /* Razor-sharp technical corners */
+    --radius-sm: 2px;
+    
+    /* Precision 3D Shadows (Machined Plate Bevels) */
+    --shadow-3d-flat: 0 1px 2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    --shadow-3d-raised: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    --shadow-3d-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
+    --shadow-3d-inset: inset 0 2px 4px 0 rgba(15, 23, 42, 0.08), 0 1px 0 rgba(255, 255, 255, 0.8);
+    
+    --transition: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 14px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    /* High-end technical radial grid backdrop representing engineering deck blueprint */
+    background-image: 
+        radial-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 0),
+        radial-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 0);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding-bottom: 40px;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    position: relative;
+    background: #f8fafc;
+    border-left: 1px solid #cbd5e1;
+    border-right: 1px solid #cbd5e1;
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.04);
+}
+
+/* Precision Chassis Fasteners (Steel structural flat-head screw styling) */
+.app::before, .app::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at 35% 35%, #f1f5f9 30%, #94a3b8 80%, #64748b 100%);
+    border: 1px solid #64748b;
+    border-radius: 50%;
+    box-shadow: inset 1px 1px 1px #fff, 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+.app::before { left: 12px; }
+.app::after { right: 12px; }
+
+/* Header - Precision Instrument Header Plate */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--accent-indigo);
+    border-bottom: 2px solid #cbd5e1;
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-3d-flat);
+    position: relative;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Metallic Cobalt Brand Logo */
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+.logo:hover {
+    transform: rotate(90deg);
+}
+
+.header h1 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1.1;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    font-family: var(--font-mono);
+}
+
+.header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Badges - Industrial indicator status labels with glowing chrome LEDs */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    border: 1px solid #cbd5e1;
+}
+
+.badge-success {
+    background: #f0fdf4;
+    color: var(--accent-emerald);
+    border-color: #bbf7d0;
+    box-shadow: inset 0 1px 0 #fff;
+}
+.badge-success::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #4ade80, #16a34a);
+    margin-right: 6px;
+    box-shadow: 0 0 6px #22c55e, inset -1px -1px 2px rgba(0,0,0,0.3);
+}
+
+.badge-info {
+    background: #eff6ff;
+    color: var(--accent-indigo);
+    border-color: #bfdbfe;
+    box-shadow: inset 0 1px 0 #fff;
+}
+.badge-info::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #60a5fa, #2563eb);
+    margin-right: 6px;
+    box-shadow: 0 0 6px #3b82f6, inset -1px -1px 2px rgba(0,0,0,0.3);
+}
+
+.badge-warning {
+    background: #fffbeb;
+    color: var(--accent-amber);
+    border-color: #fde68a;
+    box-shadow: inset 0 1px 0 #fff;
+}
+.badge-warning::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fbbf24, #d97706);
+    margin-right: 6px;
+    box-shadow: 0 0 6px #f59e0b, inset -1px -1px 2px rgba(0,0,0,0.3);
+}
+
+/* KPI Grid & Cards - Tactile telemetry LCD gauges */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-3d-flat);
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-3d-raised);
+}
+
+/* Solid vertical structural color code on the left */
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+.kpi-card:nth-child(1)::before { background: var(--accent-indigo); }
+.kpi-card:nth-child(2)::before { background: var(--accent-rose); }
+.kpi-card:nth-child(3)::before { background: var(--accent-amber); }
+.kpi-card:nth-child(4)::before { background: var(--accent-cyan); }
+
+/* Recessed technical icon slots */
+.kpi-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    border: 1px solid #cbd5e1;
+    box-shadow: var(--shadow-3d-inset);
+    flex-shrink: 0;
+}
+
+.kpi-icon-tests { background: #eff6ff; color: var(--accent-indigo); }
+.kpi-icon-detect { background: #fff1f2; color: var(--accent-rose); }
+.kpi-icon-overhead { background: #fffbeb; color: var(--accent-amber); }
+.kpi-icon-categories { background: #f0fdfa; color: var(--accent-cyan); }
+
+.kpi-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-value {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    color: var(--text-primary);
+}
+
+.kpi-label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+/* Main Grid & Cards */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-3d-flat);
+    padding: 20px 24px;
+    transition: all var(--transition);
+    position: relative;
+}
+
+.card:hover {
+    border-color: var(--border-hover);
+}
+
+.card-wide {
+    grid-column: span 2;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 10px;
+}
+
+.card-header h2 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.card-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    border: 1px solid #cbd5e1;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* The Pipeline - MLIR Compiler Flow Chart Schematic (Academic Paper look) */
+.pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 16px 12px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    position: relative;
+}
+
+/* Pluggable IC (Integrated Circuit) compiler module styling */
+.pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    border-radius: var(--radius);
+    background: #ffffff;
+    cursor: pointer;
+    transition: all var(--transition);
+    min-width: 124px;
+    position: relative;
+    box-shadow: var(--shadow-3d-flat);
+}
+
+.pipeline-stage:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-3d-raised);
+}
+
+/* Skeuomorphic solder pins on top and bottom of each module stage block */
+.pipeline-stage::before, .pipeline-stage::after {
+    content: '▪ ▪ ▪ ▪';
+    font-family: var(--font-mono);
+    font-size: 6px;
+    letter-spacing: 8px;
+    color: #94a3b8;
+    position: absolute;
+    left: 16px;
+}
+.pipeline-stage::before { top: 2px; }
+.pipeline-stage::after { bottom: 2px; }
+
+.pipeline-stage.active {
+    border: 1px solid var(--accent-indigo);
+    border-bottom: 3px solid var(--accent-blue);
+    background: #eff6ff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+    transform: translateY(-2px);
+}
+
+.stage-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    font-weight: 800;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(29, 78, 216, 0.15);
+}
+
+.pipeline-stage.active .stage-icon {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+}
+
+.stage-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-top: 4px;
+}
+
+.stage-desc {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+/* Vector flowchart arrow connectors with micro pulse keyframes */
+.pipeline-arrow {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    font-weight: 700;
+    flex-shrink: 0;
+    user-select: none;
+    animation: pulseArrow 2s infinite ease-in-out;
+}
+@keyframes pulseArrow {
+    0%, 100% { opacity: 0.4; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(2px); }
+}
+
+/* Liquid Crystal display style panel for the stage technical details */
+.pipeline-detail {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #fafafb;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent-indigo);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    min-height: 60px;
+    box-shadow: var(--shadow-3d-inset);
+}
+
+.pipeline-detail code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+    color: #1d4ed8;
+}
+
+/* Table - Continuous Sprocket Ledger Paper printout style */
+.table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius);
+    background: #ffffff;
+    box-shadow: var(--shadow-3d-inset);
+    position: relative;
+}
+
+/* Sprocket printer feed marks on sides of the table wrapper */
+.table-wrapper::before, .table-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-image: radial-gradient(circle, #94a3b8 1.5px, transparent 1.5px);
+    background-size: 6px 12px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 10;
+}
+.table-wrapper::before { left: 4px; }
+.table-wrapper::after { right: 4px; }
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+}
+
+.data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+}
+
+.data-table td {
+    padding: 8px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.data-table tbody tr {
+    transition: background var(--transition);
+}
+
+.data-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.status-pass {
+    color: var(--accent-emerald);
+    font-weight: 700;
+}
+
+.status-fail {
+    color: var(--accent-rose);
+    font-weight: 700;
+}
+
+.status-skip {
+    color: var(--accent-amber);
+    font-weight: 700;
+}
+
+.category-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: var(--text-secondary);
+}
+
+.filter-select {
+    appearance: none;
+    padding: 4px 28px 4px 10px;
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    border-radius: var(--radius-sm);
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z'/%3E%3C/svg%3E") no-repeat right 10px center;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: var(--shadow-3d-flat);
+}
+
+.filter-select:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+}
+
+/* Benchmark - Precision Console Slider Potentiometers */
+.benchmark-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bench-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bench-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bench-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Grooved sliding slider rail */
+.bench-bar-container {
+    flex: 1;
+    height: 8px;
+    background: #cbd5e1;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: visible;
+}
+
+/* Analog tick calibration markings along the groove slide rail */
+.bench-bar-container::before {
+    content: '| | | | | | | | | |';
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    font-size: 6px;
+    color: #94a3b8;
+    letter-spacing: 1.8vw;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    opacity: 0.5;
+    font-family: var(--font-mono);
+}
+
+.bench-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 0;
+    position: relative;
+}
+
+/* Sleek milled metal console fader slide cap */
+.bench-bar::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: -4px;
+    width: 16px;
+    height: 16px;
+    background: radial-gradient(circle at 35% 35%, #f8fafc 40%, #cbd5e1 90%, #94a3b8 100%);
+    border: 1px solid #475569;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1.5px 3px rgba(15, 23, 42, 0.18);
+    cursor: pointer;
+    z-index: 10;
+}
+
+.bench-bar.base { 
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8); 
+}
+
+.bench-bar.instr { 
+    background: linear-gradient(90deg, #f59e0b, #d97706); 
+}
+
+.bench-value {
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    font-weight: 700;
+    min-width: 52px;
+    text-align: right;
+}
+
+.bench-overhead {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    border: 1px solid #cbd5e1;
+}
+
+.overhead-good { 
+    background: #f0fdf4; 
+    color: var(--accent-emerald); 
+    border-color: #bbf7d0;
+}
+.overhead-warn { 
+    background: #fffbeb; 
+    color: var(--accent-amber); 
+    border-color: #fde68a;
+}
+
+.benchmark-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #cbd5e1;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-sm);
+}
+
+.legend-base { background: #1d4ed8; }
+.legend-instr { background: #d97706; }
+
+/* Comparison Grid - High Density Technical Specs */
+.comparison-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.comparison-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    background: #ffffff;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    font-size: 0.75rem;
+    transition: all var(--transition);
+    box-shadow: var(--shadow-3d-flat);
+}
+
+.comparison-row:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+}
+
+.comparison-feature {
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.comp-yes {
+    text-align: center;
+    color: var(--accent-emerald);
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.comp-no {
+    text-align: center;
+    color: var(--accent-rose);
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.comp-partial {
+    text-align: center;
+    color: var(--accent-amber);
+    font-weight: 700;
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+.comparison-header {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+    padding: 0 12px 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* Stderr Viewer - 100% Light Theme High-Contrast Vector Diagnostic scope */
+.terminal {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
+    background: #ffffff;
+    box-shadow: var(--shadow-3d-flat);
+}
+
+.terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.terminal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.terminal-dot.red { background: #ef4444; }
+.terminal-dot.yellow { background: #f59e0b; }
+.terminal-dot.green { background: #10b981; }
+
+.terminal-title {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin-left: 6px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.terminal-body {
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.6;
+    /* High contrast light cream-paper diagnostic background */
+    background: #fcfcfd; 
+    /* High readability dark slate phosphor diagnostic text */
+    color: #1e293b; 
+    overflow-x: auto;
+    white-space: pre;
+    min-height: 220px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* High Contrast Light-Theme Terminal Font colors - crisp and sharp */
+.term-red { color: #b91c1c; font-weight: 700; }
+.term-green { color: #15803d; font-weight: 700; }
+.term-blue { color: #1d4ed8; font-weight: 700; }
+.term-yellow { color: #b45309; font-weight: 700; }
+.term-cyan { color: #0369a1; font-weight: 700; }
+.term-magenta { color: #701a75; font-weight: 700; }
+.term-bold { font-weight: 700; }
+.term-dim { opacity: 0.75; color: #475569; }
+
+/* Academic / Corporate Footer */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    margin-top: 32px;
+    border-top: 1px solid #cbd5e1;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.footer p {
+    line-height: 1.5;
+}
+
+.footer-right {
+    text-align: right;
+    font-weight: 700;
+}
+
+/* Responsive Telemetry Scaling */
+@media (max-width: 900px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+    .card-wide {
+        grid-column: span 1;
+    }
+    .header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+    .header-left {
+        flex-direction: column;
+    }
+    .pipeline {
+        flex-wrap: nowrap;
+    }
+    .comparison-header, .comparison-row {
+        grid-template-columns: 1fr 60px 60px;
+    }
+}
+
+@media (max-width: 600px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    .app {
+        padding: 12px 16px;
+    }
+}
+
+/* Micro-Animations (Crisp and professional academic transitions) */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.kpi-card, .card {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kpi-card:nth-child(1) { animation-delay: 0.03s; }
+.kpi-card:nth-child(2) { animation-delay: 0.06s; }
+.kpi-card:nth-child(3) { animation-delay: 0.09s; }
+.kpi-card:nth-child(4) { animation-delay: 0.12s; }

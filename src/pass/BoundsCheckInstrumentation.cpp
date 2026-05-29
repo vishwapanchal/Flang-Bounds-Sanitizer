@@ -81,11 +81,11 @@ namespace {
 /// location does not carry file/line information (e.g. UnknownLoc).
 static std::optional<FileLineColLoc>
 extractFileLineCol(Location loc) {
-  if (auto fileLoc = loc.dyn_cast<FileLineColLoc>())
+  if (auto fileLoc = mlir::dyn_cast<FileLineColLoc>(loc))
     return fileLoc;
-  if (auto fusedLoc = loc.dyn_cast<FusedLoc>())
+  if (auto fusedLoc = mlir::dyn_cast<FusedLoc>(loc))
     for (Location inner : fusedLoc.getLocations())
-      if (auto fileLoc = inner.dyn_cast<FileLineColLoc>())
+      if (auto fileLoc = mlir::dyn_cast<FileLineColLoc>(inner))
         return fileLoc;
   return std::nullopt;
 }
@@ -244,14 +244,18 @@ struct HLFIRBoundsCheckPass
     for (int64_t dim = 0; dim < rank; ++dim) {
       Value idx = indices[dim];
 
-      // DEFENSIVE QA: Ensure the index is an integer or index type to prevent compiler crash
-      if (!idx.getType().isa<mlir::IntegerType, mlir::IndexType>()) {
-        continue; // Gracefully skip instrumentation for unsupported index types
+      // Ensure the index is an integer or index type before attempting conversion.
+      if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(idx.getType())) {
+        continue;
       }
 
-      // Cast index to i64 if needed.
-      if (idx.getType() != i64Ty)
-        idx = builder.create<arith::ExtSIOp>(loc, i64Ty, idx);
+      // Cast index to i64.  IndexType requires IndexCastOp; IntegerType uses ExtSIOp.
+      if (idx.getType() != i64Ty) {
+        if (mlir::isa<mlir::IndexType>(idx.getType()))
+          idx = builder.create<arith::IndexCastOp>(loc, i64Ty, idx);
+        else
+          idx = builder.create<arith::ExtSIOp>(loc, i64Ty, idx);
+      }
 
       // Extract lower bound and extent for this dimension from fir.shape_shift
       // or fir.shape.  fir.shape carries (extent1, extent2, ...) with lb=1.
@@ -278,16 +282,25 @@ struct HLFIRBoundsCheckPass
         continue;
       }
 
-      // DEFENSIVE QA: Ensure bounds and extents are integers
-      if (!lowerBound.getType().isa<mlir::IntegerType, mlir::IndexType>() || !extent.getType().isa<mlir::IntegerType, mlir::IndexType>()) {
+      // Ensure bounds and extents are numeric types before conversion.
+      if (!mlir::isa<mlir::IntegerType, mlir::IndexType>(lowerBound.getType()) ||
+          !mlir::isa<mlir::IntegerType, mlir::IndexType>(extent.getType())) {
         continue;
       }
 
-      // Cast operands to i64.
-      if (lowerBound.getType() != i64Ty)
-        lowerBound = builder.create<arith::ExtSIOp>(loc, i64Ty, lowerBound);
-      if (extent.getType() != i64Ty)
-        extent = builder.create<arith::ExtSIOp>(loc, i64Ty, extent);
+      // Cast operands to i64.  IndexType → IndexCastOp; IntegerType → ExtSIOp.
+      if (lowerBound.getType() != i64Ty) {
+        if (mlir::isa<mlir::IndexType>(lowerBound.getType()))
+          lowerBound = builder.create<arith::IndexCastOp>(loc, i64Ty, lowerBound);
+        else
+          lowerBound = builder.create<arith::ExtSIOp>(loc, i64Ty, lowerBound);
+      }
+      if (extent.getType() != i64Ty) {
+        if (mlir::isa<mlir::IndexType>(extent.getType()))
+          extent = builder.create<arith::IndexCastOp>(loc, i64Ty, extent);
+        else
+          extent = builder.create<arith::ExtSIOp>(loc, i64Ty, extent);
+      }
 
       // upperBound = lowerBound + extent - 1
       Value one       = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);

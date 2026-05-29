@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Flang HLFIR-Aware Array Bounds Sanitizer — Analytics Dashboard showing test results, benchmark overhead, and compiler pipeline visualization.">
+    <title>Flang HLFIR Bounds Sanitizer — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="4" fill="url(#logo-grad)"/>
+                        <path d="M8 16L14 10L20 16L14 22Z" fill="white" opacity="0.95"/>
+                        <path d="M14 16L20 10L26 16L20 22Z" fill="white" opacity="0.55"/>
+                        <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Flang HLFIR Bounds Sanitizer</h1>
+                    <p class="subtitle">Precision Compiler Diagnostics Deck</p>
+
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="badge badge-success">Build Passing</span>
+                <span class="badge badge-info">LLVM/Flang</span>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-icon-tests">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                </div>
+                <div class="kpi-content">
+                    <span class="kpi-value" id="total-tests">22</span>
+                    <span class="kpi-label">Test Cases</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-icon-detect">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="kpi-content">
+                    <span class="kpi-value" id="oob-detected">20</span>
+                    <span class="kpi-label">OOB Detected</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-icon-overhead">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div class="kpi-content">
+                    <span class="kpi-value" id="avg-overhead">&lt;12%</span>
+                    <span class="kpi-label">Avg Overhead</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-icon-categories">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </div>
+                <div class="kpi-content">
+                    <span class="kpi-value" id="categories">8</span>
+                    <span class="kpi-label">Categories</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Pipeline Visualization -->
+            <section class="card card-wide" id="pipeline-section">
+                <div class="card-header">
+                    <h2>Compiler Pipeline</h2>
+                    <span class="card-badge">Architecture</span>
+                </div>
+                <div class="pipeline">
+                    <div class="pipeline-stage" data-stage="source">
+                        <div class="stage-icon">F</div>
+                        <div class="stage-label">Fortran Source</div>
+                        <div class="stage-desc">.f90 files</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="driver">
+                        <div class="stage-icon">D</div>
+                        <div class="stage-label">Flang Driver</div>
+                        <div class="stage-desc">-fcheck=bounds</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage active" data-stage="hlfir">
+                        <div class="stage-icon">H</div>
+                        <div class="stage-label">HLFIR Pass</div>
+                        <div class="stage-desc">Instrumentation</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="fir">
+                        <div class="stage-icon">IR</div>
+                        <div class="stage-label">FIR Lowering</div>
+                        <div class="stage-desc">LLVM IR</div>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="runtime">
+                        <div class="stage-icon">RT</div>
+                        <div class="stage-label">Runtime</div>
+                        <div class="stage-desc">Bounds Check</div>
+                    </div>
+                </div>
+                <div class="pipeline-detail" id="pipeline-detail">
+                    <p>Click a pipeline stage to see implementation details.</p>
+                </div>
+            </section>
+
+            <!-- Test Results Table -->
+            <section class="card card-wide" id="tests-section">
+                <div class="card-header">
+                    <h2>Test Suite Results</h2>
+                    <div class="card-actions">
+                        <select id="category-filter" class="filter-select">
+                            <option value="all">All Categories</option>
+                        </select>
+                        <span class="card-badge" id="test-summary">22/22 Pass</span>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table" id="test-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Test Case</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="test-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Benchmark Results -->
+            <section class="card" id="benchmark-section">
+                <div class="card-header">
+                    <h2>Benchmark Overhead</h2>
+                    <span class="card-badge">NFR-1: &lt;15%</span>
+                </div>
+                <div class="benchmark-bars" id="benchmark-bars"></div>
+                <div class="benchmark-legend">
+                    <span class="legend-item"><span class="legend-dot legend-base"></span>Baseline</span>
+                    <span class="legend-item"><span class="legend-dot legend-instr"></span>Instrumented</span>
+                </div>
+            </section>
+
+            <!-- Comparison vs gfortran -->
+            <section class="card" id="comparison-section">
+                <div class="card-header">
+                    <h2>vs gfortran -fcheck=bounds</h2>
+                    <span class="card-badge">Advantage</span>
+                </div>
+                <div class="comparison-grid" id="comparison-grid"></div>
+            </section>
+
+            <!-- Diagnostic Preview -->
+            <section class="card card-wide" id="diagnostic-section">
+                <div class="card-header">
+                    <h2>Runtime Diagnostic Output</h2>
+                    <span class="card-badge">FR-5</span>
+                </div>
+                <div class="terminal" id="terminal-output">
+                    <div class="terminal-header">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="terminal-title">stderr</span>
+                    </div>
+                    <pre class="terminal-body" id="terminal-body"></pre>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <p>Department of Information Science and Engineering</p>
+                <p>R.V. College of Engineering, Bengaluru — Academic Year 2025-26</p>
+            </div>
+            <div class="footer-right">
+                <p>Vishwa Panchal (1RV23IS132) · V Nikhil (1RV24IS413) · Shreyas (1RV24IS410)</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

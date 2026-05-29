@@ -7,19 +7,48 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
-# Cancel in-progress runs if new commits are pushed to the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Enable deep GitHub Actions step debugging natively
-  ACTIONS_STEP_DEBUG: true
-
 jobs:
+  # ---------------------------------------------------------------
+  # Job 1: Validate Fortran test syntax (fast, no LLVM build)
+  # ---------------------------------------------------------------
+  validate-tests:
+    name: Validate Fortran Syntax
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install gfortran
+        run: sudo apt-get update -qq && sudo apt-get install -y gfortran
+
+      - name: Syntax-check all test files
+        run: |
+          echo "Checking Fortran syntax for all test and benchmark files..."
+          errors=0
+          for f in src/tests/tc*.f90 src/benchmark/*.f90 src/demo/demo.f90; do
+            if gfortran -fsyntax-only -std=f2008 "$f" 2>/dev/null; then
+              echo "  OK: $f"
+            else
+              echo "  FAIL: $f"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors file(s) had syntax errors."
+            exit 1
+          fi
+          echo "All files passed syntax validation."
+
+  # ---------------------------------------------------------------
+  # Job 2: Full LLVM/Flang build with bounds sanitizer
+  # ---------------------------------------------------------------
   build-and-test:
     name: Compile & Verify LLVM/Flang
-    runs-on: ubuntu-22.04 # Pinning to specific LTS for stability
+    runs-on: ubuntu-22.04
+    needs: validate-tests
 
     steps:
       - name: Checkout project
@@ -27,27 +56,25 @@ jobs:
         with:
           path: project
 
-      - name: Checkout LLVM (Shallow Clone)
+      - name: Create swap space (8GB safety net)
+        run: |
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
+      - name: Checkout LLVM (shallow)
         uses: actions/checkout@v4
         with:
           repository: llvm/llvm-project
           path: llvm-project
           fetch-depth: 1
 
-      - name: Install Optimized Build Toolchain
+      - name: Install build toolchain
         run: |
-          set -euxo pipefail
-          echo "::group::Apt-Get Update & Install"
           sudo apt-get update -qq
           sudo apt-get install -y cmake ninja-build clang lld ccache
-          echo "::endgroup::"
-          
-          echo "::group::Toolchain Versions"
-          clang --version
-          cmake --version
-          ninja --version
-          ccache --version
-          echo "::endgroup::"
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -56,48 +83,44 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flang-
           max-size: 5G
-          verbose: 2 # Maximum ccache verbosity logging
 
-      - name: Integrate project files into LLVM
+      - name: Integrate project into LLVM tree
         run: |
           set -euxo pipefail
-          
-          echo "::group::Injecting Instrumentation Pass"
-          cp -v project/src/pass/BoundsCheckInstrumentation.cpp llvm-project/flang/lib/Optimizer/Transforms/
-          cp -v project/src/pass/BoundsCheckInstrumentation.h llvm-project/flang/include/flang/Optimizer/Transforms/ 2>/dev/null || true
-          sed -i '/add_flang_library(FIRTransforms/a\  BoundsCheckInstrumentation.cpp' llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
-          echo "::endgroup::"
 
-          echo "::group::Injecting Runtime Library"
-          RUNTIME_DIR=$(find llvm-project -type d \( -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" \) | head -n 1)
-          echo "Discovered Runtime Directory: $RUNTIME_DIR"
-          cp -v project/src/runtime/bounds-check.cpp "$RUNTIME_DIR/"
-          cp -v project/src/runtime/bounds-check.h "$RUNTIME_DIR/"
-          
+          # Instrumentation pass
+          cp project/src/pass/BoundsCheckInstrumentation.cpp \
+             llvm-project/flang/lib/Optimizer/Transforms/
+          cp project/src/pass/BoundsCheckInstrumentation.h \
+             llvm-project/flang/include/flang/Optimizer/Transforms/
+          sed -i '/add_flang_library(FIRTransforms/a\  BoundsCheckInstrumentation.cpp' \
+             llvm-project/flang/lib/Optimizer/Transforms/CMakeLists.txt
+
+          # Runtime library
+          RUNTIME_DIR=$(find llvm-project -type d \
+              \( -path "*/flang-rt/lib/runtime" -o -path "*/flang/runtime" \) \
+              | head -n 1)
+          cp project/src/runtime/bounds-check.cpp "$RUNTIME_DIR/"
+          cp project/src/runtime/bounds-check.h   "$RUNTIME_DIR/"
           if echo "$RUNTIME_DIR" | grep -q "flang-rt"; then
-            sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
+            sed -i '/add_flangrt_library(flang_rt.runtime/a\  bounds-check.cpp' \
+                "$RUNTIME_DIR/CMakeLists.txt"
           else
-            sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' "$RUNTIME_DIR/CMakeLists.txt"
+            sed -i '/add_flang_library(FlangRuntime/a\  bounds-check.cpp' \
+                "$RUNTIME_DIR/CMakeLists.txt"
           fi
-          echo "::endgroup::"
 
-          echo "::group::Patching Pipelines.cpp"
-          # Insert the header include to prevent undeclared identifier compilation errors
-          sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
-          sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
-          echo "::endgroup::"
+          # Pipeline patch
+          sed -i '1s/^/#include "flang\/Optimizer\/Transforms\/BoundsCheckInstrumentation.h"\n/' \
+              llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
+          sed -i '/pm.addPass(hlfir::createLowerHLFIRIntrinsics());/i\  pm.addPass(fir::createHLFIRBoundsCheckPass());' \
+              llvm-project/flang/lib/Optimizer/Passes/Pipelines.cpp
 
       - name: Configure CMake
         run: |
-          set -euxo pipefail
-          cd llvm-project
-          mkdir -p build && cd build
-          
-          echo "::group::CMake Configuration"
-          # -DCMAKE_VERBOSE_MAKEFILE=ON forces CMake to log its exact internal decisions
+          cd llvm-project && mkdir -p build && cd build
           cmake -G Ninja ../llvm \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_VERBOSE_MAKEFILE=ON \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DLLVM_ENABLE_PROJECTS="flang;mlir" \
             -DLLVM_ENABLE_RUNTIMES="flang-rt" \
             -DLLVM_TARGETS_TO_BUILD="X86" \
@@ -111,61 +134,31 @@ jobs:
             -DLLVM_BUILD_TESTS=OFF \
             -DLLVM_BUILD_EXAMPLES=OFF \
             -DLLVM_BUILD_DOCS=OFF \
+            -DLLVM_ENABLE_BINDINGS=OFF \
             -DLLVM_PARALLEL_LINK_JOBS=1
-          echo "::endgroup::"
 
-      - name: Build Flang (Max Verbosity)
+      - name: Build Flang
         run: |
-          set -euxo pipefail
-          echo "::group::CCache Stats (Before Build)"
-          ccache -s
-          echo "::endgroup::"
-          
           cd llvm-project/build
-          
-          echo "::group::Ninja Build Execution (Real-Time Output)"
-          # -v forces Ninja to print the EXACT compiler commands it executes in real-time
-          # We use the 'flang' meta-target which safely encapsulates the driver, passes, and runtime.
-          ninja -v flang
-          echo "::endgroup::"
+          ninja -j 2 flang-new
 
-      - name: Post-Build CCache Stats
+      - name: Verify bounds sanitizer
         run: |
-          set -euxo pipefail
-          echo "::group::CCache Stats (After Build)"
-          ccache -s
-          echo "::endgroup::"
-
-      - name: Verify Bounds Sanitizer execution
-        run: |
-          set -euxo pipefail
           cd llvm-project/build
-          
-          echo "::group::Compiling Demonstration Program (Verbose)"
-          # -v asks the flang compiler driver to output its internal phases
-          bin/flang-new -v -O2 -fcheck=bounds ../../project/src/demo/demo.f90 -o demo_run
-          echo "::endgroup::"
-          
-          echo "::group::Executing Demonstration Program"
+          bin/flang-new -O2 -fcheck=bounds ../../project/src/demo/demo.f90 -o demo_run
           ./demo_run 2> demo_error.log || true
-          echo "::endgroup::"
-          
-          echo "::group::Captured Stderr Output"
           cat demo_error.log
-          echo "::endgroup::"
-          
-          echo "::group::Verification Assertion"
+
           if grep -q "HLFIR BOUNDS VIOLATION DETECTED" demo_error.log; then
-            echo "✅ SUCCESS: The bounds sanitizer correctly intercepted the OOB access and printed the diagnostic."
+            echo "SUCCESS: Bounds sanitizer intercepted OOB access."
           else
-            echo "❌ FAILURE: The bounds sanitizer did not intercept the error as expected."
+            echo "FAILURE: Bounds sanitizer did not intercept the error."
             exit 1
           fi
-          echo "::endgroup::"
 
       - name: Upload flang-new binary
         uses: actions/upload-artifact@v4
         with:
           name: flang-new-linux-x86_64
           path: llvm-project/build/bin/flang-new
-          retention-days: 3
+          retention-days: 7

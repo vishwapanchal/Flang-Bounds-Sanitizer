@@ -1,18 +1,24 @@
---- flang/lib/Frontend/CompilerInvocation.cpp
-+++ flang/lib/Frontend/CompilerInvocation.cpp
-@@ -100,6 +100,16 @@
+--- a/flang/lib/Frontend/CompilerInvocation.cpp
++++ b/flang/lib/Frontend/CompilerInvocation.cpp
+@@ -100,6 +100,10 @@
++  // HLFIR Bounds Sanitizer: wire the -fcheck=bounds flag to enable
++  // the instrumentation pass in the optimization pipeline.
    if (args.hasArg(clang::driver::options::OPT_fcheck_EQ_bounds)) {
      opts.BoundsCheck = true;
    }
-+
---- flang/lib/Optimizer/Passes/Pipelines.cpp
-+++ flang/lib/Optimizer/Passes/Pipelines.cpp
-@@ -200,6 +200,10 @@
-   // HLFIR construction is done. Now run the bounds check instrumentation
-   // if the user requested it via -fcheck=bounds.
+
+--- a/flang/lib/Optimizer/Passes/Pipelines.cpp
++++ b/flang/lib/Optimizer/Passes/Pipelines.cpp
+@@ -1,0 +1,1 @@
++#include "flang/Optimizer/Transforms/BoundsCheckInstrumentation.h"
+@@ -200,6 +201,10 @@
+   // HLFIR construction is complete.  Run the bounds-check instrumentation
+   // pass if the user requested it via -fcheck=bounds.  The pass must run
+   // before HLFIR-to-FIR lowering so that full descriptor metadata is
+   // still available.
    if (options.BoundsCheck) {
      pm.addPass(fir::createHLFIRBoundsCheckPass());
    }
-+
-   // Lower HLFIR to FIR
+
+   // Lower HLFIR intrinsics to FIR operations.
    pm.addPass(hlfir::createLowerHLFIRIntrinsicsPass());
