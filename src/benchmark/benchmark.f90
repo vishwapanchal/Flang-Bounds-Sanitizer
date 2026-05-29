@@ -17,9 +17,9 @@
 program bounds_check_benchmark
   implicit none
   integer, parameter :: N = 1024
-  real*8, allocatable :: A(:,:), B(:,:), C(:,:)
+  real(8), allocatable :: A(:,:), B(:,:), C(:,:)
   integer :: i, j, k
-  real*8 :: start_time, end_time
+  real(8) :: start_time, end_time
 
   print *, "Starting benchmark initialization (N=", N, ")..."
   allocate(A(N, N), B(N, N), C(N, N))

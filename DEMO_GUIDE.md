@@ -47,26 +47,18 @@ When explaining the project, break it into three components that form a pipeline
 
 ## Demo Execution Sequence
 
-### Phase 1: Interactive Presentation (3 minutes)
+### Phase 1: Interactive Dashboard (4 minutes)
 
-1. Open a full-screen terminal
-2. Run: `python3 src/demo/presentation.py`
-3. This walks through the architecture diagram, shows code from each component, then demonstrates the RAM-level memory access simulation
-4. Press Enter to advance through each slide
+1. Open [dashboard/index.html](file:///c:/Users/vishw/Desktop/CDLABEL/dashboard/index.html) in your browser.
+2. Walk the evaluators through the features:
+   - **Compiler Pipeline**: Click each block (Driver, Pass, Runtime) to show where our sanitizer pass is injected and what code it changes.
+   - **Interactive Diagnostics & gfortran Comparison**: Show how our sanitizer covers gaps where `gfortran -fcheck=bounds` is silent (e.g., assumed-shape, pointer-based accesses).
+   - **Test Suite Results**: Highlight the 22 real-world Fortran test cases (TC-01 to TC-22) passing successfully.
+   - **Benchmark Overhead Graph**: Demonstrate that runtime overhead is kept well under the 15% NFR requirement.
 
-### Phase 2: Dashboard (2 minutes)
+### Phase 2: Live Compilation Proof (4 minutes)
 
-1. Open `dashboard/index.html` in a browser
-2. Walk through:
-   - The compiler pipeline visualization (click each stage)
-   - The test suite results table (filter by category)
-   - The benchmark overhead bars (all under 15%)
-   - The gfortran comparison grid (highlight our advantages)
-   - The diagnostic output preview
-
-### Phase 3: Live Compilation Proof (3 minutes)
-
-1. Show the real compilation:
+1. Show the real compile-and-run verification:
    ```bash
    bash run.sh
    ```

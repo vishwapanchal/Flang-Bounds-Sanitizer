@@ -10,7 +10,7 @@
 program bounds_demo
   implicit none
   integer, parameter :: N = 5
-  real*8, allocatable :: A(:,:)
+  real(8), allocatable :: A(:,:)
   integer :: i, j
 
   print *, "========================================================="

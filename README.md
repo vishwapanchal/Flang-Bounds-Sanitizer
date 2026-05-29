@@ -61,7 +61,6 @@ graph TD
 | Runtime Library | `src/runtime/bounds-check.cpp` | C runtime function that validates indices and emits ANSI-colored diagnostics via `Terminator::Crash()` |
 | Driver Patch | `src/driver/FlangDriverIntegration.patch` | Wires `-fcheck=bounds` through `CompilerInvocation.cpp` and registers the pass in `Pipelines.cpp` |
 | Demo Program | `src/demo/demo.f90` | Self-demonstrating program that triggers an OOB access |
-| Presentation | `src/demo/presentation.py` | Interactive terminal presentation using Python `rich` |
 | Dashboard | `dashboard/index.html` | Browser-based analytics dashboard |
 
 ---
@@ -208,8 +207,7 @@ For an existing LLVM/Flang checkout:
     │   ├── polybench_2mm.f90                PolyBench 2mm kernel
     │   └── run_benchmarks.sh                Benchmark runner
     └── demo/
-        ├── demo.f90                         OOB demonstration program
-        └── presentation.py                  Interactive Rich presentation
+        └── demo.f90                         OOB demonstration program
 ```
 
 ---
