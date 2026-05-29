@@ -11,6 +11,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   LLVM_VERSION: "19.1.7"
   CACHE_EPOCH: "v2"                     # bump to force a full rebuild
@@ -34,12 +38,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-gfortran-${{ runner.os }}
 
       - name: Install gfortran
         run: |
@@ -141,6 +139,22 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.5
         with:
           version: "v0.7.7"
+
+      # ── 5b. Verify sccache server and start explicitly ──────────────────
+      - name: Verify sccache status
+        if: steps.cache-flang.outputs.cache-hit != 'true'
+        run: |
+          set +e
+          echo "Starting sccache server..."
+          sccache --start-server
+          exit_code=$?
+          if [ $exit_code -ne 0 ] || ! sccache --show-stats >/dev/null 2>&1; then
+            echo "sccache-failed=true" >> $GITHUB_ENV
+            echo "::warning::sccache server failed to start. Falling back to local compiling."
+          else
+            echo "sccache server started successfully."
+          fi
+          set -e
 
       # ── 6. LLVM tarball cache ─────────────────────────────────────
       - name: Restore LLVM tarball
@@ -248,14 +262,23 @@ jobs:
         if: steps.cache-flang.outputs.cache-hit != 'true'
         run: |
           cd llvm-project && mkdir -p build && cd build
+          
+          # Gracefully toggle sccache based on startup validation
+          LAUNCHER_FLAGS=""
+          if [ "${{ env.sccache-failed }}" != "true" ]; then
+            echo "sccache server is active. Enabling compiler caching."
+            LAUNCHER_FLAGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+          else
+            echo "sccache server is down. Bypassing cache to build locally."
+          fi
+
           cmake -G Ninja ../llvm \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
             -DLLVM_TARGETS_TO_BUILD="X86" \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            $LAUNCHER_FLAGS \
             -DLLVM_USE_LINKER=lld \
             -DBUILD_SHARED_LIBS=ON \
             -DLLVM_ENABLE_ASSERTIONS=OFF \
@@ -275,7 +298,10 @@ jobs:
           export CXXFLAGS="-pipe"
           ninja -j$(nproc) flang-new FortranRuntime
           echo "Build complete. flang-new size: $(du -sh bin/flang-new | cut -f1)"
-          sccache --show-stats
+          
+          if [ "${{ env.sccache-failed }}" != "true" ]; then
+            sccache --show-stats
+          fi
 
       # ── 11. Stage Flang artefacts for cache ──────────────────────
       - name: Stage Flang artefacts for cache
