@@ -267,7 +267,7 @@ jobs:
           if echo "$RUNTIME_DIR" | grep -q "flang-rt"; then
             ANCHOR='add_flangrt_library(flang_rt.runtime'
           else
-            ANCHOR='add_flang_library(FlangRuntime'
+            ANCHOR='add_flang_library(FortranRuntime'
           fi
           grep -q "$ANCHOR" "$RT_CMAKE" || {
             echo "::error::Anchor '$ANCHOR' not found in $RT_CMAKE"
