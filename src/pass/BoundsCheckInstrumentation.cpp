@@ -109,9 +109,9 @@ static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
 
   auto strType = fir::CharacterType::get(builder.getContext(), 1, str.size() + 1);
   auto global = builder.create<fir::GlobalOp>(
-      loc, symName, /*isConstant=*/true, mlir::LLVM::LinkageAttr::get(
-          builder.getContext(), mlir::LLVM::Linkage::Internal),
-      strType, builder.getStringAttr(str));
+      loc, symName, /*isConstant=*/true, /*isTarget=*/false,
+      strType, builder.getStringAttr(str),
+      builder.getStringAttr("internal"));
   (void)global;
   return FlatSymbolRefAttr::get(builder.getContext(), symName);
 }
