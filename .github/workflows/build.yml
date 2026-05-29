@@ -127,6 +127,23 @@ jobs:
           restore-keys: |
             ${{ env.CACHE_EPOCH }}-${{ runner.os }}-flang-${{ env.LLVM_VERSION }}-
 
+      # ── 3b. Cache hit/miss indicator ──────────────────────────────
+      - name: Cache hit indicator
+        run: |
+          if [ "${{ steps.cache-flang.outputs.cache-hit }}" = "true" ]; then
+            echo "========================================================"
+            echo "🚀 CACHE HIT: Restored pre-compiled Flang distribution!"
+            echo "========================================================"
+            echo "### 🚀 CACHE HIT: Restored pre-compiled Flang!" >> $GITHUB_STEP_SUMMARY
+            echo "Skipping compiler rebuild. Verification tests will start immediately." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "========================================================"
+            echo "🔧 CACHE MISS: Compiling LLVM/Flang from source..."
+            echo "========================================================"
+            echo "### 🔧 CACHE MISS: Re-building compiler..." >> $GITHUB_STEP_SUMMARY
+            echo "Initiating parallel compiler build with sccache caching." >> $GITHUB_STEP_SUMMARY
+          fi
+
       # ── 4. Install build toolchain (skip on full cache hit) ───────
       - name: Install build toolchain
         if: steps.cache-flang.outputs.cache-hit != 'true'
