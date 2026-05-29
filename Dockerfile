@@ -67,7 +67,6 @@ ENV CCACHE_DIR=/ccache
 RUN cmake -G Ninja ../llvm \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
-    -DLLVM_ENABLE_RUNTIMES="flang-rt" \
     -DLLVM_TARGETS_TO_BUILD="host" \
     -DCMAKE_C_COMPILER=clang \
     -DCMAKE_CXX_COMPILER=clang++ \
