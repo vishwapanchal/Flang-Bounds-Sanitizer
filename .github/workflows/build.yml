@@ -101,10 +101,10 @@ jobs:
       - name: Create swap space (8GB safety net)
         run: |
           echo "Creating 8GB swap space using dd (bypassing text file busy/overlayfs issues)..."
-          sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=progress
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          sudo dd if=/dev/zero of=/swapfile_extra bs=1M count=8192 status=progress
+          sudo chmod 600 /swapfile_extra
+          sudo mkswap /swapfile_extra
+          sudo swapon /swapfile_extra
           free -h
 
       - name: Checkout LLVM (shallow)
