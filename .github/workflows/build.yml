@@ -183,12 +183,12 @@ jobs:
       - name: Build Flang
         run: |
           cd llvm-project/build
-          ninja -j 2 flang-new
+          ninja -j 2 flang
 
       - name: Verify bounds sanitizer
         run: |
           cd llvm-project/build
-          bin/flang-new -O2 -fcheck=bounds ../../project/src/demo/demo.f90 -o demo_run
+          bin/flang -O2 -fcheck=bounds ../../project/src/demo/demo.f90 -o demo_run
           ./demo_run 2> demo_error.log || true
           cat demo_error.log
 
@@ -199,9 +199,9 @@ jobs:
             exit 1
           fi
 
-      - name: Upload flang-new binary
+      - name: Upload flang binary
         uses: actions/upload-artifact@v4
         with:
-          name: flang-new-linux-x86_64
-          path: llvm-project/build/bin/flang-new
+          name: flang-linux-x86_64
+          path: llvm-project/build/bin/flang
           retention-days: 7
