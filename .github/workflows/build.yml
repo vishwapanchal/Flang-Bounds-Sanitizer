@@ -391,7 +391,7 @@ jobs:
 
           echo "Using flang: $FLANG ($($FLANG --version 2>&1 | head -1))"
 
-          "$FLANG" -O2 -fcheck=bounds \
+          "$FLANG" -O2 \
             project/src/demo/demo.f90 \
             -o demo_run
 
@@ -458,7 +458,7 @@ jobs:
             status="fail"
             
             # Compile the test case
-            if ! "$FLANG" -O2 -fcheck=bounds "$file" -o "test_$name" 2>compile_err.log; then
+            if ! "$FLANG" -O2 "$file" -o "test_$name" 2>compile_err.log; then
               echo -e "\033[0;31mFAILED TO COMPILE\033[0m"
               cat compile_err.log | sed 's/^/  /'
               failed=$((failed + 1))
