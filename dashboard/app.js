@@ -245,6 +245,11 @@
     function initCategoryFilter() {
         const select = document.getElementById('category-filter');
         const categories = [...new Set(TEST_DATA.map(t => t.category))];
+        
+        // Dynamically update the header KPI
+        const catKpi = document.getElementById('categories');
+        if (catKpi) catKpi.textContent = categories.length;
+
         categories.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
