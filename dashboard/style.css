@@ -634,11 +634,28 @@ body {
 }
 
 .data-table tbody tr {
+    border-bottom: 1px solid var(--border);
     transition: background var(--transition);
 }
-
 .data-table tbody tr:hover {
     background: #f8fafc;
+}
+.data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Clickable Row Hint Arrow */
+.row-arrow {
+    opacity: 0.2;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    margin-left: 8px;
+}
+.test-row:hover .row-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+    color: var(--accent-blue);
 }
 
 .data-table tbody tr.active-row {

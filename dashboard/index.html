@@ -131,8 +131,11 @@
 
             <!-- Test Results Table -->
             <section class="card card-wide" id="tests-section">
-                <div class="card-header">
-                    <h2>Test Suite Results</h2>
+                <div class="card-header" style="flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+                        <h2>Test Suite Results</h2>
+                        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">(Click any row to view source & diagnostics)</span>
+                    </div>
                     <div class="card-actions">
                         <select id="category-filter" class="filter-select">
                             <option value="all">All Categories</option>
@@ -257,6 +260,6 @@
         </footer>
     </div>
 
-    <script src="app.js?v=10"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>

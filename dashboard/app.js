@@ -78,12 +78,17 @@
         tbody.innerHTML = data.map(t => {
             const statusClass = t.status === 'pass' ? 'status-pass' : t.status === 'fail' ? 'status-fail' : 'status-skip';
             const statusLabel = t.status === 'pass' ? '● PASS' : t.status === 'fail' ? '● FAIL' : '◐ SKIP';
-            return `<tr class="test-row" data-id="${t.id}" style="cursor: pointer;">
+            return `<tr class="test-row" data-id="${t.id}" title="Click to view diagnostic details" style="cursor: pointer;">
                 <td data-label="ID"><strong>${t.id}</strong></td>
                 <td data-label="Test Case">${t.name}</td>
                 <td data-label="Category"><span class="category-tag">${t.category}</span></td>
                 <td data-label="Description" class="desc-cell">${t.desc}</td>
-                <td data-label="Status" class="${statusClass}">${statusLabel}</td>
+                <td data-label="Status" class="${statusClass}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${statusLabel}</span>
+                        <span class="row-arrow">→</span>
+                    </div>
+                </td>
             </tr>`;
         }).join('');
 
