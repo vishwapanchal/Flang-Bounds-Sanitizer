@@ -315,16 +315,7 @@
         const detail = document.getElementById('pipeline-detail');
         let selectedIndex = 2; // Default: HLFIR
 
-        // Connector stream content (doubled for seamless CSS loop)
-        const STREAM = {
-            source: 'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM  '.repeat(2),
-            mlir:   'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  '.repeat(2),
-            binary: '01001000 10110000 00000001 11001101 10000000 01001011  '.repeat(2),
-        };
-        connectors.forEach(c => {
-            const s = c.querySelector('.data-flow-stream');
-            if (s) s.textContent = STREAM[c.dataset.type] || '';
-        });
+        // Pipeline selection state handling
 
         function selectStage(index) {
             stages.forEach(s => s.classList.remove('active'));
