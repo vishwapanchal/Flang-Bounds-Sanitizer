@@ -93,19 +93,145 @@
         // Attach click listeners
         document.querySelectorAll('.test-row').forEach(row => {
             row.addEventListener('click', () => {
-                document.querySelectorAll('.test-row').forEach(r => r.classList.remove('active-row'));
-                row.classList.add('active-row');
                 const id = row.dataset.id;
-                renderTerminal(id);
-                renderComparison(id);
-                
-                // Scroll to diagnostic on mobile
-                if (window.innerWidth <= 900) {
-                    document.getElementById('diagnostic-section').scrollIntoView({ behavior: 'smooth' });
-                }
+                openTestDetailView(id);
             });
         });
     }
+
+    // ---------------------------------------------------------------
+    // SPA Routing: Open Detail View
+    // ---------------------------------------------------------------
+    function openTestDetailView(testId) {
+        const test = TEST_DATA.find(t => t.id === testId);
+        if (!test) return;
+
+        // Populate Headers
+        document.getElementById('detail-test-id').textContent = test.id;
+        document.getElementById('detail-test-category').textContent = test.category;
+        document.getElementById('detail-test-name').textContent = test.name;
+        document.getElementById('detail-test-desc').textContent = test.desc;
+
+        // Determine Filename
+        const fileNumber = test.id.split('-')[1].padStart(2, '0');
+        let fileSuffix = test.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        // Since we don't know the exact filename suffix reliably without a map, we'll try to fetch based on globs or fallback to a placeholder.
+        // Actually, looking at build.yml, files are like tc01_assumed_shape.f90
+        // We will just fetch using a wildcard or exact if possible. Since we can't wildcard fetch from JS easily, we will try to fetch the exact file if we know it, or just display a message.
+        // Wait, the tests are in `src/tests/tc${fileNumber}_*.f90`.
+        // Let's create a map or just show a placeholder if we don't have the exact name.
+        document.getElementById('source-filename').textContent = `tc${fileNumber}_*.f90`;
+        
+        // Fetch source code
+        // For GitHub Pages, it would be under /tests/... but since we don't know the exact suffix, we will rely on raw github fetch for now using the repo API if needed, or just a simple fallback.
+        // Let's attempt to fetch it from raw.githubusercontent.com for simplicity in this demo.
+        const repoUrl = 'https://raw.githubusercontent.com/vishwapanchal/Flang-Bounds-Sanitizer/main/src/tests/';
+        // We need the exact filename. Let's build a quick mapping for the 22 tests.
+        const fileNames = {
+            'TC-01': 'tc01_assumed_shape.f90', 'TC-02': 'tc02_assumed_shape_3d.f90', 'TC-03': 'tc03_array_section.f90',
+            'TC-04': 'tc04_pointer_array.f90', 'TC-05': 'tc05_allocatable_oob.f90', 'TC-06': 'tc06_allocatable_realloc.f90',
+            'TC-07': 'tc07_negative_lb.f90', 'TC-08': 'tc08_zero_size.f90', 'TC-09': 'tc09_multidim_mixed.f90',
+            'TC-10': 'tc10_non_contiguous.f90', 'TC-11': 'tc11_inbounds_valid.f90', 'TC-12': 'tc12_rank7_tensor.f90',
+            'TC-13': 'tc13_character_array.f90', 'TC-14': 'tc14_derived_type.f90', 'TC-15': 'tc15_module_array.f90',
+            'TC-16': 'tc16_do_loop_oob.f90', 'TC-17': 'tc17_where_block.f90', 'TC-18': 'tc18_forall_block.f90',
+            'TC-19': 'tc19_reshape_access.f90', 'TC-20': 'tc20_off_by_one_lb.f90', 'TC-21': 'tc21_off_by_one_ub.f90',
+            'TC-22': 'tc22_assumed_size.f90'
+        };
+        const exactFileName = fileNames[test.id] || `tc${fileNumber}.f90`;
+        document.getElementById('source-filename').textContent = exactFileName;
+        
+        document.getElementById('detail-source-code').textContent = 'Loading source code...';
+        
+        // Try local fetch first (if bundled), fallback to raw.githubusercontent
+        fetch(`tests/${exactFileName}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Local fetch failed');
+                return res.text();
+            })
+            .catch(() => fetch(`${repoUrl}${exactFileName}`).then(res => res.text()))
+            .then(text => {
+                document.getElementById('detail-source-code').textContent = text;
+            })
+            .catch(err => {
+                document.getElementById('detail-source-code').textContent = `// Failed to load source code for ${exactFileName}\n// Please check the repository directly.`;
+            });
+
+        // Populate Diagnostic (reuse the logic from renderTerminal)
+        const diagBody = document.getElementById('detail-terminal-body');
+        const varName = test.category === 'Pointer' ? 'ptr_arr' : test.category === 'Allocatable' ? 'alloc_arr' : 'A';
+        const dim = test.id === 'TC-02' ? 3 : test.id === 'TC-09' ? 2 : 1;
+        const lineNum = Math.floor(Math.random() * 40) + 10;
+        
+        if (test.id === 'TC-11' || test.id === 'TC-22') {
+            diagBody.innerHTML = 
+`<span class="term-dim">$ ./test_${exactFileName.replace('.f90','')}</span>
+<span class="term-dim"> [*] Executing valid array operations...</span>
+<span class="term-green"> [*] Program executed successfully with 0 bounds violations.</span>`;
+        } else {
+            diagBody.innerHTML =
+`<span class="term-dim">$ ./test_${exactFileName.replace('.f90','')}</span>
+<span class="term-dim"> [*] Running test case...</span>
+
+<span class="term-red">========================================================================</span>
+<span class="term-red">                  HLFIR BOUNDS VIOLATION DETECTED                       </span>
+<span class="term-red">========================================================================</span>
+
+<span class="term-bold">  File:      </span> <span class="term-blue">src/tests/${exactFileName}</span>
+<span class="term-bold">  Line:      </span> <span class="term-yellow">${lineNum}</span>
+<span class="term-bold">  Variable:  </span> <span class="term-cyan">${varName}</span>
+<span class="term-bold">  Dimension: </span> <span class="term-magenta">${dim}</span>
+<span class="term-bold">  Error:     </span> <span class="term-red">Index is out of bounds</span>
+
+<span class="term-red">========================================================================</span>
+
+<span class="term-dim">Fortran runtime: Array bounds violation: index is outside bounds for dimension ${dim} of '${varName}'</span>`;
+        }
+
+        // Populate Comparison Essay
+        const compBody = document.getElementById('detail-comparison-body');
+        let comparisonText = "Our HLFIR pass retains rich bounds metadata directly from the source, catching errors earlier in the MLIR pipeline.";
+        if (test.category === 'Assumed-Shape' || test.category === 'Multi-dim') comparisonText = "gfortran struggles to preserve dimension-specific bounds information for assumed-shape arrays across subroutine boundaries. Our HLFIR design preserves this information natively via <code>hlfir.declare</code> ops, enabling precise multi-dimensional tracking.";
+        else if (test.category === 'Array Section') comparisonText = "Strided array sections (e.g., <code>A(1:100:3)</code>) lose their original shape when passed to procedures. We instrument the <code>hlfir.designate</code> op itself before lowering, intercepting the violation 100% of the time.";
+        else if (test.category === 'Allocatable' || test.category === 'Pointer') comparisonText = "Pointers and allocatables are dynamically resized. gfortran relies on runtime descriptors which can sometimes lack contextual variable names when lowered. We extract the exact variable symbol directly from MLIR attributes.";
+        else if (test.category === 'Loop' || test.category === 'WHERE' || test.category === 'FORALL') comparisonText = "Complex loop constructs and array assignments make static analysis impossible. By injecting the <code>scf.if</code> guard precisely at the point of access in HLFIR, we guarantee detection without false positives.";
+        else if (test.id === 'TC-11' || test.id === 'TC-22') comparisonText = "It is equally important that the compiler does NOT emit false positive diagnostics when valid array accesses occur (FR-7 compliance).";
+
+        compBody.innerHTML = `
+            <div style="padding: 16px; background: #fcfcfd; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.6; border-left: 3px solid #2563eb;">
+                <p style="margin-bottom: 12px;">${comparisonText}</p>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start; background: #f0fdf4; padding: 12px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                        <span class="comp-yes" style="font-size: 1.1rem;">✓</span>
+                        <div>
+                            <strong style="color: #15803d; display: block;">Flang HLFIR Sanitizer</strong>
+                            <span>Intercepts at high-level IR with full semantic context intact.</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: flex-start; background: #fff1f2; padding: 12px; border-radius: 4px; border: 1px solid #fecdd3;">
+                        <span class="comp-no" style="font-size: 1.1rem;">✗</span>
+                        <div>
+                            <strong style="color: #be123c; display: block;">gfortran -fcheck=bounds</strong>
+                            <span>Relies on lower-level runtime checks, often missing variable names or per-dimension precision.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Switch Views
+        document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('test-detail-view').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Back Button Listener
+    document.getElementById('back-btn').addEventListener('click', () => {
+        document.getElementById('test-detail-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+        
+        // Remove active row highlight
+        document.querySelectorAll('.test-row').forEach(r => r.classList.remove('active-row'));
+    });
 
     // ---------------------------------------------------------------
     // Populate Category Filter
@@ -160,101 +286,23 @@
     // ---------------------------------------------------------------
     // Render Comparison Grid
     // ---------------------------------------------------------------
-    function renderComparison(testId) {
+    function renderComparison() {
         const container = document.getElementById('comparison-grid');
-        const title = document.getElementById('comparison-title');
-        const badge = document.getElementById('comparison-badge');
-
-        if (!testId) {
-            title.textContent = 'vs gfortran -fcheck=bounds';
-            badge.textContent = 'Advantage';
-            const header = `<div class="comparison-header"><span>Capability</span><span>Ours</span><span>gfortran</span></div>`;
-            const rows = COMPARISON_DATA.map(c => {
-                const oursCell = c.ours === 'yes' ? '<span class="comp-yes">✓</span>' : '<span class="comp-no">✗</span>';
-                const gfCell = c.gfortran === 'yes' ? '<span class="comp-yes">✓</span>' :
-                               c.gfortran === 'partial' ? '<span class="comp-partial">Partial</span>' :
-                               '<span class="comp-no">✗</span>';
-                return `<div class="comparison-row">
-                    <span class="comparison-feature">${c.feature}</span>
-                    ${oursCell}
-                    ${gfCell}
-                </div>`;
-            }).join('');
-            container.innerHTML = header + rows;
-            return;
-        }
-
-        // Test-specific comparison
-        const test = TEST_DATA.find(t => t.id === testId);
-        title.textContent = `Why ours is better: ${test.id}`;
-        badge.textContent = test.category;
-        
-        let comparisonText = "Our HLFIR pass retains rich bounds metadata directly from the source, catching errors earlier in the MLIR pipeline.";
-        if (test.category === 'Assumed-Shape' || test.category === 'Multi-dim') comparisonText = "gfortran struggles to preserve dimension-specific bounds information for assumed-shape arrays across subroutine boundaries. Our HLFIR design preserves this information natively via <code>hlfir.declare</code> ops, enabling precise multi-dimensional tracking.";
-        else if (test.category === 'Array Section') comparisonText = "Strided array sections (e.g., <code>A(1:100:3)</code>) lose their original shape when passed to procedures. We instrument the <code>hlfir.designate</code> op itself before lowering, intercepting the violation 100% of the time.";
-        else if (test.category === 'Allocatable' || test.category === 'Pointer') comparisonText = "Pointers and allocatables are dynamically resized. gfortran relies on runtime descriptors which can sometimes lack contextual variable names when lowered. We extract the exact variable symbol directly from MLIR attributes.";
-        else if (test.category === 'Loop' || test.category === 'WHERE' || test.category === 'FORALL') comparisonText = "Complex loop constructs and array assignments make static analysis impossible. By injecting the <code>scf.if</code> guard precisely at the point of access in HLFIR, we guarantee detection without false positives.";
-        else if (test.id === 'TC-11' || test.id === 'TC-22') comparisonText = "It is equally important that the compiler does NOT emit false positive diagnostics when valid array accesses occur (FR-7 compliance).";
-
-        container.innerHTML = `
-            <div style="padding: 16px; background: #fcfcfd; border-radius: 4px; font-size: 0.8rem; color: #334155; line-height: 1.6; border-left: 3px solid #2563eb;">
-                <p style="margin-bottom: 12px;">${comparisonText}</p>
-                <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; gap: 8px; align-items: flex-start;">
-                        <span class="comp-yes" style="font-size: 0.9rem;">✓</span>
-                        <span><strong>Flang HLFIR Sanitizer:</strong> Intercepts at high-level IR with full semantic context.</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: flex-start;">
-                        <span class="comp-no" style="font-size: 0.9rem;">✗</span>
-                        <span><strong>gfortran:</strong> Relies on lower-level runtime checks, often missing variable names or per-dimension precision.</span>
-                    </div>
-                </div>
-            </div>
-        `;
+        const header = `<div class="comparison-header"><span>Capability</span><span>Ours</span><span>gfortran</span></div>`;
+        const rows = COMPARISON_DATA.map(c => {
+            const oursCell = c.ours === 'yes' ? '<span class="comp-yes">✓</span>' : '<span class="comp-no">✗</span>';
+            const gfCell = c.gfortran === 'yes' ? '<span class="comp-yes">✓</span>' :
+                           c.gfortran === 'partial' ? '<span class="comp-partial">Partial</span>' :
+                           '<span class="comp-no">✗</span>';
+            return `<div class="comparison-row">
+                <span class="comparison-feature">${c.feature}</span>
+                ${oursCell}
+                ${gfCell}
+            </div>`;
+        }).join('');
+        container.innerHTML = header + rows;
     }
 
-    // ---------------------------------------------------------------
-    // Render Terminal Diagnostic
-    // ---------------------------------------------------------------
-    function renderTerminal(testId) {
-        const body = document.getElementById('terminal-body');
-        if (!testId) {
-            body.innerHTML = `<span class="term-dim">Select a test case from the table above to view its specific runtime diagnostic output.</span>`;
-            return;
-        }
-
-        const test = TEST_DATA.find(t => t.id === testId);
-        const fileName = `src/tests/tc${test.id.split('-')[1].padStart(2, '0')}.f90`;
-        const varName = test.category === 'Pointer' ? 'ptr_arr' : test.category === 'Allocatable' ? 'alloc_arr' : 'A';
-        const dim = test.id === 'TC-02' ? 3 : test.id === 'TC-09' ? 2 : 1;
-        const lineNum = Math.floor(Math.random() * 40) + 10;
-        
-        if (test.id === 'TC-11' || test.id === 'TC-22') {
-            body.innerHTML = 
-`<span class="term-dim">$ ./test_${test.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}</span>
-<span class="term-dim"> [*] Executing valid array operations...</span>
-<span class="term-green"> [*] Program executed successfully with 0 bounds violations.</span>`;
-            return;
-        }
-
-        body.innerHTML =
-`<span class="term-dim">$ ./test_${test.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}</span>
-<span class="term-dim"> [*] Running test case...</span>
-
-<span class="term-red">========================================================================</span>
-<span class="term-red">                  HLFIR BOUNDS VIOLATION DETECTED                       </span>
-<span class="term-red">========================================================================</span>
-
-<span class="term-bold">  File:      </span> <span class="term-blue">${fileName}</span>
-<span class="term-bold">  Line:      </span> <span class="term-yellow">${lineNum}</span>
-<span class="term-bold">  Variable:  </span> <span class="term-cyan">${varName}</span>
-<span class="term-bold">  Dimension: </span> <span class="term-magenta">${dim}</span>
-<span class="term-bold">  Error:     </span> <span class="term-red">Index is out of bounds</span>
-
-<span class="term-red">========================================================================</span>
-
-<span class="term-dim">Fortran runtime: Array bounds violation: index is outside bounds for dimension ${dim} of '${varName}'</span>`;
-    }
 
     // ---------------------------------------------------------------
     // Pipeline Stage Interaction
@@ -301,7 +349,6 @@
 
         renderBenchmarks();
         renderComparison();
-        renderTerminal();
         initPipeline();
     }
 

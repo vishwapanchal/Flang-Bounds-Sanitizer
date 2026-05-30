@@ -35,7 +35,9 @@
             </div>
         </header>
 
-        <!-- KPI Cards -->
+        <!-- Main Dashboard View -->
+        <div id="dashboard-view">
+            <!-- KPI Cards -->
         <section class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-icon kpi-icon-tests">
@@ -168,22 +170,65 @@
                 <div class="comparison-grid" id="comparison-grid"></div>
             </section>
 
-            <!-- Diagnostic Preview -->
-            <section class="card card-wide" id="diagnostic-section">
-                <div class="card-header">
-                    <h2>Runtime Diagnostic Output</h2>
-                    <span class="card-badge">FR-5</span>
-                </div>
-                <div class="terminal" id="terminal-output">
-                    <div class="terminal-header">
-                        <span class="terminal-dot red"></span>
-                        <span class="terminal-dot yellow"></span>
-                        <span class="terminal-dot green"></span>
-                        <span class="terminal-title">stderr</span>
+
+        </div>
+        </div>
+
+        <!-- Single Page App: Test Detail View -->
+        <div id="test-detail-view" style="display: none;">
+            <div class="card card-wide" style="margin-bottom: 20px;">
+                <div class="card-header" style="padding-bottom: 16px;">
+                    <button id="back-btn" style="background: var(--bg-primary); border: 1px solid var(--border); padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                        ← Back to Dashboard
+                    </button>
+                    <div style="flex: 1; text-align: right;">
+                        <h2 id="detail-test-id" style="display: inline-block; font-size: 1.2rem; color: var(--accent-indigo);">TC-XX</h2>
+                        <span id="detail-test-category" class="category-tag" style="margin-left: 8px; vertical-align: top;">Category</span>
                     </div>
-                    <pre class="terminal-body" id="terminal-body"></pre>
                 </div>
-            </section>
+                <div style="padding: 0 10px;">
+                    <h3 id="detail-test-name" style="margin-bottom: 8px; font-size: 1.4rem;">Test Name</h3>
+                    <p id="detail-test-desc" style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">Description goes here.</p>
+                </div>
+            </div>
+
+            <div class="main-grid">
+                <!-- Source Code -->
+                <section class="card card-wide">
+                    <div class="card-header">
+                        <h2>Source Code</h2>
+                        <span class="card-badge" id="source-filename">test.f90</span>
+                    </div>
+                    <div class="terminal" style="background: #1e293b; color: #f8fafc;">
+                        <pre id="detail-source-code" style="padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.75rem; min-height: 200px;">Loading source code...</pre>
+                    </div>
+                </section>
+
+                <!-- Runtime Diagnostic Preview -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Runtime Diagnostic Output</h2>
+                        <span class="card-badge">stderr</span>
+                    </div>
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                        </div>
+                        <pre class="terminal-body" id="detail-terminal-body" style="min-height: 250px;"></pre>
+                    </div>
+                </section>
+
+                <!-- Comparison Essay -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Why Ours is Better</h2>
+                        <span class="card-badge">Analysis</span>
+                    </div>
+                    <div id="detail-comparison-body" style="padding: 10px;"></div>
+                </section>
+            </div>
         </div>
 
         <!-- Footer -->

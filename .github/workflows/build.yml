@@ -595,8 +595,9 @@ jobs:
 
       - name: Prepare dashboard site
         run: |
-          mkdir -p site
+          mkdir -p site/tests
           cp -r project/dashboard/* site/
+          cp -r project/src/tests/* site/tests/
           cp results-json-dir/results.json site/
           echo "Dashboard files prepared:"
           ls -la site
