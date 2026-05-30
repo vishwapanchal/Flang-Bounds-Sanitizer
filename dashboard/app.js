@@ -114,18 +114,7 @@
 
         // Determine Filename
         const fileNumber = test.id.split('-')[1].padStart(2, '0');
-        let fileSuffix = test.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-        // Since we don't know the exact filename suffix reliably without a map, we'll try to fetch based on globs or fallback to a placeholder.
-        // Actually, looking at build.yml, files are like tc01_assumed_shape.f90
-        // We will just fetch using a wildcard or exact if possible. Since we can't wildcard fetch from JS easily, we will try to fetch the exact file if we know it, or just display a message.
-        // Wait, the tests are in `src/tests/tc${fileNumber}_*.f90`.
-        // Let's create a map or just show a placeholder if we don't have the exact name.
-        document.getElementById('source-filename').textContent = `tc${fileNumber}_*.f90`;
         
-        // Fetch source code
-        // For GitHub Pages, it would be under /tests/... but since we don't know the exact suffix, we will rely on raw github fetch for now using the repo API if needed, or just a simple fallback.
-        // Let's attempt to fetch it from raw.githubusercontent.com for simplicity in this demo.
-        const repoUrl = 'https://raw.githubusercontent.com/vishwapanchal/Flang-Bounds-Sanitizer/main/src/tests/';
         // We need the exact filename. Let's build a quick mapping for the 22 tests.
         const fileNames = {
             'TC-01': 'tc01_assumed_shape_1d.f90',
