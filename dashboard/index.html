@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
     <div class="app">
@@ -91,25 +91,45 @@
                         <div class="stage-label">Fortran Source</div>
                         <div class="stage-desc">.f90 files</div>
                     </div>
-                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-connector" data-type="source" data-from="source" data-to="driver">
+                        <div class="connector-track">
+                            <div class="data-flow-stream" id="flow-0"></div>
+                        </div>
+                        <div class="connector-label">AST</div>
+                    </div>
                     <div class="pipeline-stage" data-stage="driver">
                         <div class="stage-icon">D</div>
                         <div class="stage-label">Flang Driver</div>
                         <div class="stage-desc">-fcheck=bounds</div>
                     </div>
-                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-connector" data-type="mlir" data-from="driver" data-to="hlfir">
+                        <div class="connector-track">
+                            <div class="data-flow-stream" id="flow-1"></div>
+                        </div>
+                        <div class="connector-label">HLFIR</div>
+                    </div>
                     <div class="pipeline-stage active" data-stage="hlfir">
                         <div class="stage-icon">H</div>
                         <div class="stage-label">HLFIR Pass</div>
                         <div class="stage-desc">Instrumentation</div>
                     </div>
-                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-connector" data-type="mlir" data-from="hlfir" data-to="fir">
+                        <div class="connector-track">
+                            <div class="data-flow-stream" id="flow-2"></div>
+                        </div>
+                        <div class="connector-label">FIR</div>
+                    </div>
                     <div class="pipeline-stage" data-stage="fir">
                         <div class="stage-icon">IR</div>
                         <div class="stage-label">FIR Lowering</div>
                         <div class="stage-desc">LLVM IR</div>
                     </div>
-                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-connector" data-type="binary" data-from="fir" data-to="runtime">
+                        <div class="connector-track">
+                            <div class="data-flow-stream" id="flow-3"></div>
+                        </div>
+                        <div class="connector-label">ELF</div>
+                    </div>
                     <div class="pipeline-stage" data-stage="runtime">
                         <div class="stage-icon">RT</div>
                         <div class="stage-label">Runtime</div>
@@ -199,8 +219,14 @@
                         <h2>Source Code</h2>
                         <span class="card-badge" id="source-filename">test.f90</span>
                     </div>
-                    <div class="terminal" style="background: #1e293b; color: #f8fafc;">
-                        <pre id="detail-source-code" style="padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.75rem; min-height: 200px;">Loading source code...</pre>
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title">Fortran Source</span>
+                        </div>
+                        <pre id="detail-source-code" class="terminal-body" style="color: #1e293b; background: #f8fafc; min-height: 200px; max-height: 420px; overflow-y: auto;">Loading source code...</pre>
                     </div>
                 </section>
 
@@ -243,6 +269,6 @@
         </footer>
     </div>
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>

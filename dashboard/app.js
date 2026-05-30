@@ -305,35 +305,69 @@
 
 
     // ---------------------------------------------------------------
-    // Pipeline Stage Interaction
+    // Pipeline Stage Interaction + Animated Connectors
     // ---------------------------------------------------------------
     function initPipeline() {
         const stages = document.querySelectorAll('.pipeline-stage');
+        const connectors = document.querySelectorAll('.pipeline-connector');
         const detail = document.getElementById('pipeline-detail');
         let currentIndex = 2; // Default to HLFIR
         let animationInterval;
+
+        // --- Connector content by type ---
+        // Each stream string is doubled so the CSS translateX(-50%) creates a seamless loop
+        const STREAM_CONTENT = {
+            source: [
+                'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM ',
+                'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM ',
+            ].join(''),
+            mlir: [
+                'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  hlfir.assign  ',
+                'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  hlfir.assign  ',
+            ].join(''),
+            binary: [
+                '01001000 10110000 00000001 11001101 10000000 01001011 01110011 ',
+                '01001000 10110000 00000001 11001101 10000000 01001011 01110011 ',
+            ].join(''),
+        };
+
+        // Populate each connector's stream
+        connectors.forEach(connector => {
+            const type = connector.dataset.type;
+            const stream = connector.querySelector('.data-flow-stream');
+            if (stream && STREAM_CONTENT[type]) {
+                stream.textContent = STREAM_CONTENT[type];
+            }
+        });
 
         function updateStage(index) {
             stages.forEach(s => s.classList.remove('active'));
             stages[index].classList.add('active');
             const key = stages[index].dataset.stage;
             detail.innerHTML = '<p>' + (PIPELINE_DETAILS[key] || '') + '</p>';
+
+            // Highlight the connector feeding INTO the current stage
+            // connector[i] sits between stage[i] and stage[i+1]
+            // So the connector leading INTO stage[index] is connector[index - 1]
+            connectors.forEach(c => c.classList.remove('active-flow'));
+            if (index > 0 && connectors[index - 1]) {
+                connectors[index - 1].classList.add('active-flow');
+            }
         }
 
         function startAnimation() {
-            // Clear any existing interval to prevent overlapping
             if (animationInterval) clearInterval(animationInterval);
             animationInterval = setInterval(() => {
                 currentIndex = (currentIndex + 1) % stages.length;
                 updateStage(currentIndex);
-            }, 3500); // 3.5s per stage
+            }, 3500);
         }
 
         stages.forEach((stage, idx) => {
             stage.addEventListener('click', () => {
                 currentIndex = idx;
                 updateStage(currentIndex);
-                startAnimation(); // Restart the loop timer on manual click
+                startAnimation();
             });
         });
 
