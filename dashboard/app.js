@@ -79,11 +79,11 @@
             const statusClass = t.status === 'pass' ? 'status-pass' : t.status === 'fail' ? 'status-fail' : 'status-skip';
             const statusLabel = t.status === 'pass' ? '● PASS' : t.status === 'fail' ? '● FAIL' : '◐ SKIP';
             return `<tr class="test-row" data-id="${t.id}" style="cursor: pointer;">
-                <td><strong>${t.id}</strong></td>
-                <td>${t.name}</td>
-                <td><span class="category-tag">${t.category}</span></td>
-                <td>${t.desc}</td>
-                <td class="${statusClass}">${statusLabel}</td>
+                <td data-label="ID"><strong>${t.id}</strong></td>
+                <td data-label="Test Case">${t.name}</td>
+                <td data-label="Category"><span class="category-tag">${t.category}</span></td>
+                <td data-label="Description" class="desc-cell">${t.desc}</td>
+                <td data-label="Status" class="${statusClass}">${statusLabel}</td>
             </tr>`;
         }).join('');
 
@@ -128,32 +128,44 @@
         const repoUrl = 'https://raw.githubusercontent.com/vishwapanchal/Flang-Bounds-Sanitizer/main/src/tests/';
         // We need the exact filename. Let's build a quick mapping for the 22 tests.
         const fileNames = {
-            'TC-01': 'tc01_assumed_shape.f90', 'TC-02': 'tc02_assumed_shape_3d.f90', 'TC-03': 'tc03_array_section.f90',
-            'TC-04': 'tc04_pointer_array.f90', 'TC-05': 'tc05_allocatable_oob.f90', 'TC-06': 'tc06_allocatable_realloc.f90',
-            'TC-07': 'tc07_negative_lb.f90', 'TC-08': 'tc08_zero_size.f90', 'TC-09': 'tc09_multidim_mixed.f90',
-            'TC-10': 'tc10_non_contiguous.f90', 'TC-11': 'tc11_inbounds_valid.f90', 'TC-12': 'tc12_rank7_tensor.f90',
-            'TC-13': 'tc13_character_array.f90', 'TC-14': 'tc14_derived_type.f90', 'TC-15': 'tc15_module_array.f90',
-            'TC-16': 'tc16_do_loop_oob.f90', 'TC-17': 'tc17_where_block.f90', 'TC-18': 'tc18_forall_block.f90',
-            'TC-19': 'tc19_reshape_access.f90', 'TC-20': 'tc20_off_by_one_lb.f90', 'TC-21': 'tc21_off_by_one_ub.f90',
-            'TC-22': 'tc22_assumed_size.f90'
+            'TC-01': 'tc01_assumed_shape_1d.f90',
+            'TC-02': 'tc02_assumed_shape_3d.f90',
+            'TC-03': 'tc03_array_section_stride.f90',
+            'TC-04': 'tc04_pointer_array.f90',
+            'TC-05': 'tc05_allocatable_oob.f90',
+            'TC-06': 'tc06_allocatable_realloc.f90',
+            'TC-07': 'tc07_negative_lbound.f90',
+            'TC-08': 'tc08_zero_size.f90',
+            'TC-09': 'tc09_multidim_mixed.f90',
+            'TC-10': 'tc10_noncontiguous_section.f90',
+            'TC-11': 'tc11_inbounds_valid.f90',
+            'TC-12': 'tc12_high_rank.f90',
+            'TC-13': 'tc13_character_array.f90',
+            'TC-14': 'tc14_derived_type.f90',
+            'TC-15': 'tc15_module_array.f90',
+            'TC-16': 'tc16_do_loop_oob.f90',
+            'TC-17': 'tc17_where_block.f90',
+            'TC-18': 'tc18_forall_oob.f90',
+            'TC-19': 'tc19_reshape_access.f90',
+            'TC-20': 'tc20_lower_off_by_one.f90',
+            'TC-21': 'tc21_upper_off_by_one.f90',
+            'TC-22': 'tc22_assumed_size.f90',
         };
         const exactFileName = fileNames[test.id] || `tc${fileNumber}.f90`;
         document.getElementById('source-filename').textContent = exactFileName;
-        
-        document.getElementById('detail-source-code').textContent = 'Loading source code...';
-        
-        // Try local fetch first (if bundled), fallback to raw.githubusercontent
-        fetch(`tests/${exactFileName}`)
+
+        const codeEl = document.getElementById('detail-source-code');
+        codeEl.textContent = 'Loading source code…';
+
+        const repoUrl = 'https://raw.githubusercontent.com/vishwapanchal/Flang-Bounds-Sanitizer/main/src/tests/';
+        fetch(`${repoUrl}${exactFileName}`)
             .then(res => {
-                if (!res.ok) throw new Error('Local fetch failed');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.text();
             })
-            .catch(() => fetch(`${repoUrl}${exactFileName}`).then(res => res.text()))
-            .then(text => {
-                document.getElementById('detail-source-code').textContent = text;
-            })
-            .catch(err => {
-                document.getElementById('detail-source-code').textContent = `// Failed to load source code for ${exactFileName}\n// Please check the repository directly.`;
+            .then(text => { codeEl.textContent = text; })
+            .catch(() => {
+                codeEl.textContent = `! Could not load ${exactFileName}\n! URL: ${repoUrl}${exactFileName}`;
             });
 
         // Populate Diagnostic (reuse the logic from renderTerminal)
@@ -306,74 +318,42 @@
 
     // ---------------------------------------------------------------
     // Pipeline Stage Interaction + Animated Connectors
+    // No auto-loop: hover shows colour; click selects and shows detail.
     // ---------------------------------------------------------------
     function initPipeline() {
         const stages = document.querySelectorAll('.pipeline-stage');
         const connectors = document.querySelectorAll('.pipeline-connector');
         const detail = document.getElementById('pipeline-detail');
-        let currentIndex = 2; // Default to HLFIR
-        let animationInterval;
+        let selectedIndex = 2; // Default: HLFIR
 
-        // --- Connector content by type ---
-        // Each stream string is doubled so the CSS translateX(-50%) creates a seamless loop
-        const STREAM_CONTENT = {
-            source: [
-                'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM ',
-                'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM ',
-            ].join(''),
-            mlir: [
-                'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  hlfir.assign  ',
-                'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  hlfir.assign  ',
-            ].join(''),
-            binary: [
-                '01001000 10110000 00000001 11001101 10000000 01001011 01110011 ',
-                '01001000 10110000 00000001 11001101 10000000 01001011 01110011 ',
-            ].join(''),
+        // Connector stream content (doubled for seamless CSS loop)
+        const STREAM = {
+            source: 'PROGRAM main  INTEGER :: A(10)  A(1) = 42  END PROGRAM  '.repeat(2),
+            mlir:   'hlfir.designate  hlfir.declare  scf.if  fir.box_dims  '.repeat(2),
+            binary: '01001000 10110000 00000001 11001101 10000000 01001011  '.repeat(2),
         };
-
-        // Populate each connector's stream
-        connectors.forEach(connector => {
-            const type = connector.dataset.type;
-            const stream = connector.querySelector('.data-flow-stream');
-            if (stream && STREAM_CONTENT[type]) {
-                stream.textContent = STREAM_CONTENT[type];
-            }
+        connectors.forEach(c => {
+            const s = c.querySelector('.data-flow-stream');
+            if (s) s.textContent = STREAM[c.dataset.type] || '';
         });
 
-        function updateStage(index) {
+        function selectStage(index) {
             stages.forEach(s => s.classList.remove('active'));
+            connectors.forEach(c => c.classList.remove('active-flow'));
             stages[index].classList.add('active');
+            selectedIndex = index;
             const key = stages[index].dataset.stage;
             detail.innerHTML = '<p>' + (PIPELINE_DETAILS[key] || '') + '</p>';
-
-            // Highlight the connector feeding INTO the current stage
-            // connector[i] sits between stage[i] and stage[i+1]
-            // So the connector leading INTO stage[index] is connector[index - 1]
-            connectors.forEach(c => c.classList.remove('active-flow'));
             if (index > 0 && connectors[index - 1]) {
                 connectors[index - 1].classList.add('active-flow');
             }
         }
 
-        function startAnimation() {
-            if (animationInterval) clearInterval(animationInterval);
-            animationInterval = setInterval(() => {
-                currentIndex = (currentIndex + 1) % stages.length;
-                updateStage(currentIndex);
-            }, 3500);
-        }
-
         stages.forEach((stage, idx) => {
-            stage.addEventListener('click', () => {
-                currentIndex = idx;
-                updateStage(currentIndex);
-                startAnimation();
-            });
+            stage.addEventListener('click', () => selectStage(idx));
         });
 
-        // Initial setup
-        updateStage(currentIndex);
-        startAnimation();
+        selectStage(selectedIndex);
     }
 
     // ---------------------------------------------------------------

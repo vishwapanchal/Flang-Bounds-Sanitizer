@@ -407,9 +407,11 @@ body {
 }
 
 .pipeline-stage:hover {
-    border-color: var(--border-hover);
+    border-color: var(--accent-indigo);
+    border-bottom-color: var(--accent-blue);
+    background: #eff6ff;
     transform: translateY(-3px);
-    box-shadow: var(--shadow-3d-raised);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
 }
 
 /* Skeuomorphic solder pins on top and bottom of each module stage block */
@@ -568,15 +570,7 @@ body {
     box-shadow: inset 0 0 0 1px rgba(74,222,128,0.4), 0 0 10px rgba(74,222,128,0.2);
 }
 
-/* Label below connector */
-.connector-label {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
+/* Connector label removed — no text label below connector */
 
 @keyframes flowScroll {
     0%   { transform: translateX(0); }
@@ -1029,7 +1023,39 @@ body {
     font-weight: 700;
 }
 
-/* Responsive Telemetry Scaling */
+/* ==========================================================================
+   Back Button & Detail Title Row
+   ========================================================================== */
+.back-btn {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+.back-btn:hover {
+    border-color: var(--border-hover);
+    background: #fff;
+}
+.detail-title-row {
+    flex: 1;
+    text-align: right;
+}
+
+/* ==========================================================================
+   Responsive — Comprehensive Mobile-First
+   ========================================================================== */
+
+/* ---- 900px: Tablet ---- */
 @media (max-width: 900px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1042,11 +1068,13 @@ body {
     }
     .header {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         text-align: center;
+        padding: 12px 16px;
     }
     .header-left {
         flex-direction: column;
+        align-items: center;
         text-align: center;
     }
     .header-right {
@@ -1067,62 +1095,259 @@ body {
     .footer-right {
         text-align: center;
     }
+    .detail-title-row {
+        text-align: left;
+        margin-top: 4px;
+    }
 }
 
-@media (max-width: 600px) {
-    .kpi-grid {
-        grid-template-columns: 1fr;
+/* ---- 720px: Pipeline becomes vertical ---- */
+@media (max-width: 720px) {
+    .pipeline {
+        flex-direction: column;
+        align-items: stretch;
+        overflow-x: visible;
+        gap: 0;
+        padding: 12px 10px;
+    }
+    .pipeline-stage {
+        min-width: unset;
+        width: 100%;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 10px 14px;
+    }
+    /* Hide the solder-pin pseudos on mobile — too cramped */
+    .pipeline-stage::before,
+    .pipeline-stage::after {
+        display: none;
+    }
+    .pipeline-connector {
+        width: 100%;
+        height: 28px;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+    /* Replace horizontal track with a thin vertical bar + down arrow */
+    .connector-track {
+        width: 3px;
+        height: 28px;
+        background: linear-gradient(180deg, #e2e8f0, #cbd5e1) !important;
+        border: none !important;
+        border-radius: 2px;
+        overflow: visible;
+        box-shadow: none !important;
+    }
+    .connector-track::after {
+        right: auto;
+        bottom: -7px;
+        left: 50%;
+        top: auto;
+        transform: translateX(-50%);
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid #94a3b8;
+        border-bottom: none;
+    }
+    /* Colour-coded vertical bars */
+    .pipeline-connector[data-type="source"] .connector-track { background: linear-gradient(180deg, #bfdbfe, #93c5fd) !important; }
+    .pipeline-connector[data-type="source"] .connector-track::after { border-top-color: #2563eb; }
+    .pipeline-connector[data-type="mlir"]   .connector-track { background: linear-gradient(180deg, #c4b5fd, #a78bfa) !important; }
+    .pipeline-connector[data-type="mlir"]   .connector-track::after { border-top-color: #7c3aed; }
+    .pipeline-connector[data-type="binary"] .connector-track { background: linear-gradient(180deg, #334155, #1e293b) !important; }
+    .pipeline-connector[data-type="binary"] .connector-track::after { border-top-color: #4ade80; }
+    /* Hide scrolling stream text on vertical mobile connector */
+    .data-flow-stream {
+        display: none;
+    }
+}
+
+/* ---- 640px: Phone ---- */
+@media (max-width: 640px) {
+    html, body {
+        overflow-x: hidden;
     }
     .app {
         width: 100%;
-        max-width: 100vw;
-        padding: 12px 10px;
+        max-width: 100%;
+        padding: 10px 10px;
         margin: 0;
         border: none;
         box-shadow: none;
         box-sizing: border-box;
+        overflow-x: hidden;
+    }
+    /* Decorative fasteners hidden on mobile */
+    .app::before, .app::after { display: none; }
+
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .kpi-card {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+    .kpi-value { font-size: 1.3rem; }
+    .kpi-icon { width: 36px; height: 36px; }
+
+    .header h1 {
+        font-size: 1.05rem;
+    }
+
+    .card {
+        padding: 14px 14px;
+        overflow: hidden;
     }
     .card-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 6px;
     }
     .card-actions {
         width: 100%;
         justify-content: space-between;
-        margin-top: 8px;
+        margin-top: 4px;
     }
-    .benchmark-legend {
+
+    /* --- Table → Card list on mobile --- */
+    .table-wrapper {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        overflow-x: visible;
+    }
+    .table-wrapper::before, .table-wrapper::after { display: none; }
+    .data-table {
+        display: block;
+    }
+    .data-table thead {
+        display: none;
+    }
+    .data-table tbody {
+        display: flex;
         flex-direction: column;
         gap: 8px;
     }
+    .data-table tbody tr.test-row {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        grid-template-rows: auto auto;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-bottom: 2px solid #cbd5e1;
+        border-radius: var(--radius);
+        background: #fff;
+        box-shadow: var(--shadow-3d-flat);
+        gap: 2px 10px;
+    }
+    .data-table td {
+        display: block;
+        padding: 0;
+        border-bottom: none;
+        font-size: 0.8rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* ID takes top-left, spans row 1 */
+    .data-table td:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 0.75rem;
+        color: var(--accent-indigo);
+        align-self: center;
+    }
+    /* Test Case name — top-right, row 1, bold */
+    .data-table td:nth-child(2) {
+        grid-column: 2;
+        grid-row: 1;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Category — bottom-left, row 2 */
+    .data-table td:nth-child(3) {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    /* Description — hidden on mobile */
+    .data-table td.desc-cell {
+        display: none;
+    }
+    /* Status — bottom-right, row 2 */
+    .data-table td:nth-child(5) {
+        grid-column: 2;
+        grid-row: 2;
+        font-size: 0.75rem;
+    }
+
+    /* --- Terminal / source code --- */
     .terminal-body {
-        font-size: 0.65rem;
+        font-size: 0.68rem;
         padding: 12px;
+        white-space: pre-wrap !important;
+        word-break: break-all;
+        overflow-x: hidden;
+    }
+
+    /* --- Benchmark --- */
+    .benchmark-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .bench-bar-container::before {
+        display: none; /* hide tick marks on mobile */
+    }
+
+    /* --- Comparison grid --- */
+    .comparison-header, .comparison-row {
+        grid-template-columns: 1fr 50px 50px;
+        font-size: 0.7rem;
+    }
+
+    /* --- Detail view back button --- */
+    .back-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .detail-title-row {
+        text-align: left;
+        width: 100%;
+    }
+
+    /* Ensure no child can cause horizontal scroll */
+    .pipeline-detail, .card, section {
+        max-width: 100%;
+        overflow-x: hidden;
+        word-break: break-word;
+    }
+}
+
+/* ---- 400px: Very small phones ---- */
+@media (max-width: 400px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
     }
     .header h1 {
-        font-size: 1.15rem; /* Slightly smaller for mobile to prevent word breaking */
-    }
-    .pipeline, .table-wrapper, .terminal, .comparison-grid {
-        width: 100%;
-        max-width: calc(100vw - 20px);
-    }
-    /* Allow scrolling inside containers */
-    .table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        font-size: 0.95rem;
     }
 }
 
-/* Micro-Animations (Crisp and professional academic transitions) */
+/* ==========================================================================
+   Micro-Animations
+   ========================================================================== */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-
 .kpi-card, .card {
     animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-
 .kpi-card:nth-child(1) { animation-delay: 0.03s; }
 .kpi-card:nth-child(2) { animation-delay: 0.06s; }
 .kpi-card:nth-child(3) { animation-delay: 0.09s; }

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
     <div class="app">
@@ -95,7 +95,6 @@
                         <div class="connector-track">
                             <div class="data-flow-stream" id="flow-0"></div>
                         </div>
-                        <div class="connector-label">AST</div>
                     </div>
                     <div class="pipeline-stage" data-stage="driver">
                         <div class="stage-icon">D</div>
@@ -106,7 +105,6 @@
                         <div class="connector-track">
                             <div class="data-flow-stream" id="flow-1"></div>
                         </div>
-                        <div class="connector-label">HLFIR</div>
                     </div>
                     <div class="pipeline-stage active" data-stage="hlfir">
                         <div class="stage-icon">H</div>
@@ -117,7 +115,6 @@
                         <div class="connector-track">
                             <div class="data-flow-stream" id="flow-2"></div>
                         </div>
-                        <div class="connector-label">FIR</div>
                     </div>
                     <div class="pipeline-stage" data-stage="fir">
                         <div class="stage-icon">IR</div>
@@ -128,7 +125,6 @@
                         <div class="connector-track">
                             <div class="data-flow-stream" id="flow-3"></div>
                         </div>
-                        <div class="connector-label">ELF</div>
                     </div>
                     <div class="pipeline-stage" data-stage="runtime">
                         <div class="stage-icon">RT</div>
@@ -197,11 +193,11 @@
         <!-- Single Page App: Test Detail View -->
         <div id="test-detail-view" style="display: none;">
             <div class="card card-wide" style="margin-bottom: 20px;">
-                <div class="card-header" style="padding-bottom: 16px;">
-                    <button id="back-btn" style="background: var(--bg-primary); border: 1px solid var(--border); padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                <div class="card-header" style="padding-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                    <button id="back-btn" class="back-btn">
                         ← Back to Dashboard
                     </button>
-                    <div style="flex: 1; text-align: right;">
+                    <div class="detail-title-row">
                         <h2 id="detail-test-id" style="display: inline-block; font-size: 1.2rem; color: var(--accent-indigo);">TC-XX</h2>
                         <span id="detail-test-category" class="category-tag" style="margin-left: 8px; vertical-align: top;">Category</span>
                     </div>
@@ -269,6 +265,6 @@
         </footer>
     </div>
 
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=6"></script>
 </body>
 </html>
