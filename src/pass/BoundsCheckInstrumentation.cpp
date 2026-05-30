@@ -206,11 +206,24 @@ struct HLFIRBoundsCheckPass
     auto loc = designateOp.getLoc();
     builder.setInsertionPoint(designateOp);
 
-    // --- (1) Resolve hlfir.declare ---
+    // --- (1) Resolve hlfir.declare (for variable name) and determine if Boxed ---
     Value memref = designateOp.getMemref();
-    auto declareOp = memref.getDefiningOp<hlfir::DeclareOp>();
-    if (!declareOp)
-      return; // Cannot resolve; skip.
+    bool isBox = memref.getType().isa<fir::BaseBoxType>();
+
+    hlfir::DeclareOp declareOp;
+    Value current = memref;
+    while (current) {
+      if (auto decl = current.getDefiningOp<hlfir::DeclareOp>()) {
+        declareOp = decl;
+        break;
+      } else if (auto load = current.getDefiningOp<fir::LoadOp>()) {
+        current = load.getMemref();
+      } else if (auto convert = current.getDefiningOp<fir::ConvertOp>()) {
+        current = convert.getValue();
+      } else {
+        break;
+      }
+    }
 
     // --- (2) Collect index operands from designate ---
     // DesignateOp carries indices for each accessed dimension.
@@ -218,11 +231,13 @@ struct HLFIRBoundsCheckPass
     if (indices.empty())
       return; // Scalar reference; nothing to check.
 
-    // --- (3) Extract bounds from declare's shape operand ---
-    // The shape operand is an fir.shape or fir.shape_shift value.
-    Value shape = declareOp.getShape();
-    if (!shape)
-      return;
+    // --- (3) Extract bounds from declare's shape operand or box ---
+    Value shape;
+    if (declareOp)
+      shape = declareOp.getShape();
+
+    if (!isBox && !shape)
+      return; // Cannot resolve statically for non-boxed type; skip.
 
     int64_t rank = static_cast<int64_t>(indices.size());
     auto i64Ty  = builder.getI64Type();
@@ -237,9 +252,12 @@ struct HLFIRBoundsCheckPass
       lineNumber = static_cast<int32_t>(fileLineLoc->getLine());
     }
 
-    std::string varName = declareOp.getUniqName().str();
-    if (varName.empty())
-      varName = "<unnamed>";
+    std::string varName = "<unnamed>";
+    if (declareOp) {
+      varName = declareOp.getUniqName().str();
+      if (varName.empty())
+        varName = "<unnamed>";
+    }
 
     Value varPtr = createInlineStringAddress(builder, funcOp, loc, varName);
     Value filePtr = createInlineStringAddress(builder, funcOp, loc, fileName);
@@ -263,29 +281,39 @@ struct HLFIRBoundsCheckPass
           idx = builder.create<arith::ExtSIOp>(loc, i64Ty, idx);
       }
 
-      // Extract lower bound and extent for this dimension from fir.shape_shift
-      // or fir.shape.  fir.shape carries (extent1, extent2, ...) with lb=1.
-      // fir.shape_shift carries (lb1, ext1, lb2, ext2, ...).
+      // Extract lower bound and extent for this dimension.
+      // If the array is boxed, we can extract this dynamically from the descriptor.
+      // Otherwise we fall back to statically known shapes from hlfir.declare.
       Value lowerBound, extent;
-      auto shapeShiftOp = shape.getDefiningOp<fir::ShapeShiftOp>();
-      auto shapeOp      = shape.getDefiningOp<fir::ShapeOp>();
 
-      if (shapeShiftOp) {
-        auto operands = shapeShiftOp.getOperands();
-        // DEFENSIVE QA: Ensure operands are valid and within array bounds
-        if (static_cast<size_t>(dim * 2 + 1) >= operands.size()) continue;
-        lowerBound = operands[dim * 2];
-        extent     = operands[dim * 2 + 1];
-      } else if (shapeOp) {
-        auto operands = shapeOp.getOperands();
-        if (static_cast<size_t>(dim) >= operands.size()) continue;
-        // Lower bound is implicitly 1 per Fortran default.
-        lowerBound = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
-        extent = operands[dim];
+      if (isBox) {
+        Value dimVal = builder.create<arith::ConstantIndexOp>(loc, dim);
+        auto boxDims = builder.create<fir::BoxDimsOp>(
+            loc, builder.getIndexType(), builder.getIndexType(),
+            builder.getIndexType(), memref, dimVal);
+        lowerBound = boxDims.getResult(0);
+        extent     = boxDims.getResult(1);
       } else {
-        // Cannot statically resolve dynamic descriptor shape here.
-        // Safely skip bounds check for this dimension to avoid false positives.
-        continue;
+        auto shapeShiftOp = shape.getDefiningOp<fir::ShapeShiftOp>();
+        auto shapeOp      = shape.getDefiningOp<fir::ShapeOp>();
+
+        if (shapeShiftOp) {
+          auto operands = shapeShiftOp.getOperands();
+          // DEFENSIVE QA: Ensure operands are valid and within array bounds
+          if (static_cast<size_t>(dim * 2 + 1) >= operands.size()) continue;
+          lowerBound = operands[dim * 2];
+          extent     = operands[dim * 2 + 1];
+        } else if (shapeOp) {
+          auto operands = shapeOp.getOperands();
+          if (static_cast<size_t>(dim) >= operands.size()) continue;
+          // Lower bound is implicitly 1 per Fortran default.
+          lowerBound = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
+          extent = operands[dim];
+        } else {
+          // Cannot statically resolve dynamic descriptor shape here.
+          // Safely skip bounds check for this dimension to avoid false positives.
+          continue;
+        }
       }
 
       // Ensure bounds and extents are numeric types before conversion.
