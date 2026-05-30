@@ -110,10 +110,31 @@ static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
   std::string nullTermStr = str.str();
   nullTermStr.push_back('\0');
   auto strType = fir::CharacterType::get(builder.getContext(), 1, nullTermStr.size());
+
   auto global = builder.create<fir::GlobalOp>(
       loc, symName, /*isConstant=*/true, /*isTarget=*/false,
-      strType, builder.getStringAttr(nullTermStr),
-      builder.getStringAttr("internal"));
+      strType, Attribute{}, builder.getStringAttr("internal"));
+
+  {
+    OpBuilder::InsertionGuard guard2(builder);
+    mlir::Block *block = builder.createBlock(&global.getRegion());
+    builder.setInsertionPointToEnd(block);
+
+    auto strAttr = builder.getStringAttr(nullTermStr);
+    auto sizeAttr = builder.getI64IntegerAttr(nullTermStr.size());
+    auto valTag = builder.getStringAttr(fir::StringLitOp::value());
+    auto sizeTag = builder.getStringAttr(fir::StringLitOp::size());
+
+    SmallVector<NamedAttribute> attrs = {
+        NamedAttribute(valTag, strAttr),
+        NamedAttribute(sizeTag, sizeAttr)};
+
+    auto stringLitOp = builder.create<fir::StringLitOp>(
+        loc, ArrayRef<Type>{strType}, std::nullopt, attrs);
+
+    builder.create<fir::HasValueOp>(loc, stringLitOp.getResult());
+  }
+
   return FlatSymbolRefAttr::get(builder.getContext(), symName);
 }
 
