@@ -567,6 +567,11 @@ body {
     background: #f8fafc;
 }
 
+.data-table tbody tr.active-row {
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+}
+
 .status-pass {
     color: var(--accent-emerald);
     font-weight: 700;
