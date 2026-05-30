@@ -310,18 +310,36 @@
     function initPipeline() {
         const stages = document.querySelectorAll('.pipeline-stage');
         const detail = document.getElementById('pipeline-detail');
+        let currentIndex = 2; // Default to HLFIR
+        let animationInterval;
 
-        stages.forEach(stage => {
+        function updateStage(index) {
+            stages.forEach(s => s.classList.remove('active'));
+            stages[index].classList.add('active');
+            const key = stages[index].dataset.stage;
+            detail.innerHTML = '<p>' + (PIPELINE_DETAILS[key] || '') + '</p>';
+        }
+
+        function startAnimation() {
+            // Clear any existing interval to prevent overlapping
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = setInterval(() => {
+                currentIndex = (currentIndex + 1) % stages.length;
+                updateStage(currentIndex);
+            }, 3500); // 3.5s per stage
+        }
+
+        stages.forEach((stage, idx) => {
             stage.addEventListener('click', () => {
-                stages.forEach(s => s.classList.remove('active'));
-                stage.classList.add('active');
-                const key = stage.dataset.stage;
-                detail.innerHTML = '<p>' + (PIPELINE_DETAILS[key] || '') + '</p>';
+                currentIndex = idx;
+                updateStage(currentIndex);
+                startAnimation(); // Restart the loop timer on manual click
             });
         });
 
-        // Default active
-        detail.innerHTML = '<p>' + PIPELINE_DETAILS.hlfir + '</p>';
+        // Initial setup
+        updateStage(currentIndex);
+        startAnimation();
     }
 
     // ---------------------------------------------------------------
