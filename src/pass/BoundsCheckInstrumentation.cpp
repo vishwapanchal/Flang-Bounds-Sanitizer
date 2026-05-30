@@ -107,12 +107,13 @@ static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
   OpBuilder::InsertionGuard guard(builder);
   builder.setInsertionPointToStart(module.getBody());
 
-  auto strType = fir::CharacterType::get(builder.getContext(), 1, str.size() + 1);
+  std::string nullTermStr = str.str();
+  nullTermStr.push_back('\0');
+  auto strType = fir::CharacterType::get(builder.getContext(), 1, nullTermStr.size());
   auto global = builder.create<fir::GlobalOp>(
       loc, symName, /*isConstant=*/true, /*isTarget=*/false,
-      strType, builder.getStringAttr(str),
+      strType, builder.getStringAttr(nullTermStr),
       builder.getStringAttr("internal"));
-  (void)global;
   return FlatSymbolRefAttr::get(builder.getContext(), symName);
 }
 
