@@ -501,6 +501,28 @@ body {
     transition: background 0.3s ease;
 }
 
+/* The flying animated arrowhead */
+.arrow-line::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    border-left: 6px solid var(--accent-indigo);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    animation: flyArrow 1.5s infinite linear;
+    opacity: 0.6;
+}
+
+@keyframes flyArrow {
+    0%   { left: 0%; opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { left: calc(100% - 12px); opacity: 0; }
+}
+
+/* Static arrowhead at the very end */
 .arrow-line::after {
     content: '';
     position: absolute;
@@ -519,6 +541,10 @@ body {
 }
 .pipeline-connector.active-flow .arrow-line::after {
     border-left-color: var(--accent-blue);
+}
+.pipeline-connector.active-flow .arrow-line::before {
+    border-left-color: var(--accent-blue);
+    opacity: 1;
 }
 
 /* Keep legacy arrow class if needed */
