@@ -90,33 +90,35 @@ extractFileLineCol(Location loc) {
   return std::nullopt;
 }
 
-/// Return a GlobalOp holding a string constant, creating it in
-/// the module's body if it does not already exist.
-/// The string is stored WITHOUT a NUL terminator; the runtime receives
-/// explicit length parameters alongside each string pointer.
-static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
-                                                    ModuleOp module,
-                                                    Location loc,
-                                                    StringRef str) {
-  // Unique symbol name based on a hash of the content.
-  std::string symName =
-      ("__bounds_check_str_" + llvm::Twine(llvm::hash_value(str))).str();
-
-  if (auto existing = module.lookupSymbol<fir::GlobalOp>(symName))
-    return FlatSymbolRefAttr::get(builder.getContext(), symName);
-
-  // Create a fir.global with linkage internal holding the string.
-  OpBuilder::InsertionGuard guard(builder);
-  builder.setInsertionPointToStart(module.getBody());
-
-  // Type length = str.size(), StringAttr value = str.  Both match exactly.
+/// Allocate and store a character string constant inline inside the function.
+/// The alloca is placed in the function's entry block, while the string_lit
+/// and store are placed at the current insertion point.
+static Value createInlineStringAddress(OpBuilder &builder, func::FuncOp funcOp, Location loc, StringRef str) {
   auto strType = fir::CharacterType::get(builder.getContext(), 1, str.size());
-  auto global = builder.create<fir::GlobalOp>(
-      loc, symName, /*isConstant=*/true, /*isTarget=*/false,
-      strType, builder.getStringAttr(str),
-      builder.getStringAttr("internal"));
-  (void)global;
-  return FlatSymbolRefAttr::get(builder.getContext(), symName);
+  auto strAttr = builder.getStringAttr(str);
+  auto sizeAttr = builder.getI64IntegerAttr(str.size());
+  auto valTag = builder.getStringAttr(fir::StringLitOp::value());
+  auto sizeTag = builder.getStringAttr(fir::StringLitOp::size());
+
+  SmallVector<NamedAttribute> attrs = {
+      NamedAttribute(valTag, strAttr),
+      NamedAttribute(sizeTag, sizeAttr)};
+
+  // 1. Allocate stack memory at the beginning of the function's entry block
+  Value allocaVal;
+  {
+    OpBuilder::InsertionGuard guard(builder);
+    builder.setInsertionPointToStart(&funcOp.getBlocks().front());
+    auto allocaOp = builder.create<fir::AllocaOp>(loc, strType);
+    allocaVal = allocaOp.getResult();
+  }
+
+  // 2. Create the inline string literal and store it into the alloca at the instrumentation site
+  auto stringLitOp = builder.create<fir::StringLitOp>(
+      loc, ArrayRef<Type>{strType}, std::nullopt, attrs);
+  builder.create<fir::StoreOp>(loc, stringLitOp.getResult(), allocaVal);
+  
+  return allocaVal;
 }
 
 } // anonymous namespace
@@ -239,8 +241,8 @@ struct HLFIRBoundsCheckPass
     if (varName.empty())
       varName = "<unnamed>";
 
-    auto varNameRef  = getOrCreateStringConstant(builder, module, loc, varName);
-    auto fileNameRef = getOrCreateStringConstant(builder, module, loc, fileName);
+    Value varPtr = createInlineStringAddress(builder, funcOp, loc, varName);
+    Value filePtr = createInlineStringAddress(builder, funcOp, loc, fileName);
 
     // --- (5) For each dimension, insert OOB predicate + scf.if ---
     Value oobCondition = builder.create<arith::ConstantIntOp>(loc, 0, i1Ty);
@@ -325,19 +327,7 @@ struct HLFIRBoundsCheckPass
       Value lineVal =
           builder.create<arith::ConstantIntOp>(loc, lineNumber, i32Ty);
 
-      // Materialise string pointers (fir.address_of).
-      Value varPtr =
-          builder.create<fir::AddrOfOp>(loc,
-              fir::ReferenceType::get(
-                  fir::CharacterType::get(builder.getContext(), 1,
-                                          varName.size())),
-              varNameRef);
-      Value filePtr =
-          builder.create<fir::AddrOfOp>(loc,
-              fir::ReferenceType::get(
-                  fir::CharacterType::get(builder.getContext(), 1,
-                                          fileName.size())),
-              fileNameRef);
+      // Using varPtr and filePtr allocated inline before the loop.
 
       // Cast string pointers to the opaque char* the runtime expects.
       auto charPtrTy = fir::ReferenceType::get(

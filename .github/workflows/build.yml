@@ -331,10 +331,8 @@ jobs:
           mkdir -p flang-artefacts/bin flang-artefacts/lib
           cp -l llvm-project/build/bin/flang-new flang-artefacts/bin/ 2>/dev/null \
             || cp llvm-project/build/bin/flang-new flang-artefacts/bin/
-          find llvm-project/build/lib \( -name '*.so*' -o -name '*.a' \) -type f \
-            -exec cp -Pl {} flang-artefacts/lib/ \; 2>/dev/null \
-            || find llvm-project/build/lib \( -name '*.so*' -o -name '*.a' \) -type f \
-               -exec cp -P {} flang-artefacts/lib/ \;
+          find llvm-project/build/lib \( -name '*.so*' -o -name '*.a' \) \
+            -exec cp -P {} flang-artefacts/lib/ \;
           echo "Artefact sizes:"
           du -sh flang-artefacts/bin flang-artefacts/lib
 
