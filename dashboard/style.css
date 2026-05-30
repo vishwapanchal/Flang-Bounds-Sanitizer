@@ -634,14 +634,20 @@ body {
 }
 
 .data-table tbody tr {
-    border-bottom: 1px solid var(--border);
     transition: background var(--transition);
 }
-.data-table tbody tr:hover {
-    background: #f8fafc;
+.data-table tbody tr td {
+    transition: border-color var(--transition), background var(--transition);
 }
-.data-table tbody tr:last-child {
+.data-table tbody tr:hover td {
+    background: #fff1f2; /* Subtle red tint */
+    border-bottom-color: #ef4444; /* Bright red bottom border */
+}
+.data-table tbody tr:last-child td {
     border-bottom: none;
+}
+.data-table tbody tr:hover:last-child td {
+    border-bottom: 1px solid #ef4444;
 }
 
 /* Clickable Row Hint Arrow */
@@ -655,7 +661,8 @@ body {
 .test-row:hover .row-arrow {
     opacity: 1;
     transform: translateX(4px);
-    color: var(--accent-blue);
+    color: #ef4444; /* Bright red arrow */
+    font-weight: 800;
 }
 
 .data-table tbody tr.active-row {
