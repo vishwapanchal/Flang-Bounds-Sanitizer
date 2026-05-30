@@ -388,6 +388,7 @@ jobs:
           chmod +x flang-compiler-dist/bin/flang-new
           FLANG=flang-compiler-dist/bin/flang-new
           export LD_LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LD_LIBRARY_PATH:-}"
+          export LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LIBRARY_PATH:-}"
 
           echo "Using flang: $FLANG ($($FLANG --version 2>&1 | head -1))"
 
@@ -433,6 +434,7 @@ jobs:
           chmod +x flang-compiler-dist/bin/flang-new
           FLANG=flang-compiler-dist/bin/flang-new
           export LD_LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LD_LIBRARY_PATH:-}"
+          export LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LIBRARY_PATH:-}"
 
           echo "========================================================"
           echo "       RUNNING BOUNDS CHECK SANITIZER TEST SUITE"
