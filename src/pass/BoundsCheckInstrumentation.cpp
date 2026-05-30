@@ -206,6 +206,13 @@ struct HLFIRBoundsCheckPass
     auto loc = designateOp.getLoc();
     builder.setInsertionPoint(designateOp);
 
+    // --- (0) Skip array sections (triplets) ---
+    // If any dimension uses a triplet, this is a section creation, not an element access.
+    // The actual element accesses will be caught later when elements are accessed from the section.
+    for (bool b : designateOp.getIsTriplet()) {
+      if (b) return;
+    }
+
     // --- (1) Resolve hlfir.declare (for variable name) and determine if Boxed ---
     Value memref = designateOp.getMemref();
     bool isBox = memref.getType().isa<fir::BaseBoxType>();
@@ -236,8 +243,15 @@ struct HLFIRBoundsCheckPass
     if (declareOp)
       shape = declareOp.getShape();
 
+    // If a component shape is directly available (e.g. derived type arrays), use it
+    if (Value compShape = designateOp.getComponentShape()) {
+      shape = compShape;
+    }
+
+    // If the variable is neither a boxed type (descriptor) nor statically shaped,
+    // we do not have enough bounds metadata to instrument it cleanly here.
     if (!isBox && !shape)
-      return; // Cannot resolve statically for non-boxed type; skip.
+      return;
 
     int64_t rank = static_cast<int64_t>(indices.size());
     auto i64Ty  = builder.getI64Type();
@@ -263,8 +277,6 @@ struct HLFIRBoundsCheckPass
     Value filePtr = createInlineStringAddress(builder, funcOp, loc, fileName);
 
     // --- (5) For each dimension, insert OOB predicate + scf.if ---
-    Value oobCondition = builder.create<arith::ConstantIntOp>(loc, 0, i1Ty);
-
     for (int64_t dim = 0; dim < rank; ++dim) {
       Value idx = indices[dim];
 
@@ -338,16 +350,23 @@ struct HLFIRBoundsCheckPass
 
       // upperBound = lowerBound + extent - 1
       Value one       = builder.create<arith::ConstantIntOp>(loc, 1, i64Ty);
-      Value upperBound = builder.create<arith::SubIOp>(
-          loc,
-          builder.create<arith::AddIOp>(loc, lowerBound, extent),
-          one);
+      Value extentMinusOne = builder.create<arith::SubIOp>(loc, extent, one);
+      Value upperBound = builder.create<arith::AddIOp>(loc, lowerBound, extentMinusOne);
+
+      // Check for assumed-size arrays where extent < 0 (unknown upper bound)
+      Value zero      = builder.create<arith::ConstantIntOp>(loc, 0, i64Ty);
+      Value isAssumedSize = builder.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, extent, zero);
 
       // OOB condition: idx < lowerBound || idx > upperBound
       Value tooLow  = builder.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::slt, idx, lowerBound);
       Value tooHigh = builder.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::sgt, idx, upperBound);
+
+      // If assumed-size, ignore upper bound violations for this dimension
+      Value falseVal = builder.create<arith::ConstantIntOp>(loc, 0, i1Ty);
+      tooHigh = builder.create<arith::SelectOp>(loc, isAssumedSize, falseVal, tooHigh);
+
       Value dimOOB  = builder.create<arith::OrIOp>(loc, tooLow, tooHigh);
 
       // --- (6) Insert scf.if wrapping the runtime call ---
