@@ -392,7 +392,9 @@ jobs:
 
           echo "Using flang: $FLANG ($($FLANG --version 2>&1 | head -1))"
 
+          FLANG_LIBS="$PWD/flang-compiler-dist/lib"
           "$FLANG" -O2 \
+            -L"$FLANG_LIBS" \
             project/src/demo/demo.f90 \
             -o demo_run
 
@@ -433,8 +435,9 @@ jobs:
           set -euo pipefail
           chmod +x flang-compiler-dist/bin/flang-new
           FLANG=flang-compiler-dist/bin/flang-new
-          export LD_LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LD_LIBRARY_PATH:-}"
-          export LIBRARY_PATH="$PWD/flang-compiler-dist/lib:${LIBRARY_PATH:-}"
+          FLANG_LIBS="$PWD/flang-compiler-dist/lib"
+          export LD_LIBRARY_PATH="$FLANG_LIBS:${LD_LIBRARY_PATH:-}"
+          export LIBRARY_PATH="$FLANG_LIBS:${LIBRARY_PATH:-}"
 
           echo "========================================================"
           echo "       RUNNING BOUNDS CHECK SANITIZER TEST SUITE"
@@ -460,7 +463,7 @@ jobs:
             status="fail"
             
             # Compile the test case
-            if ! "$FLANG" -O2 "$file" -o "test_$name" 2>compile_err.log; then
+            if ! "$FLANG" -O2 -L"$FLANG_LIBS" "$file" -o "test_$name" 2>compile_err.log; then
               echo -e "\033[0;31mFAILED TO COMPILE\033[0m"
               cat compile_err.log | sed 's/^/  /'
               failed=$((failed + 1))

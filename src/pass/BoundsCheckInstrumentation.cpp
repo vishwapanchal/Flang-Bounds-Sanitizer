@@ -90,8 +90,10 @@ extractFileLineCol(Location loc) {
   return std::nullopt;
 }
 
-/// Return a GlobalOp holding a NUL-terminated string constant, creating it in
-/// the module's symbol table if it does not already exist.
+/// Return a GlobalOp holding a string constant, creating it in
+/// the module's body if it does not already exist.
+/// The string is stored WITHOUT a NUL terminator; the runtime receives
+/// explicit length parameters alongside each string pointer.
 static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
                                                     ModuleOp module,
                                                     Location loc,
@@ -107,34 +109,13 @@ static FlatSymbolRefAttr getOrCreateStringConstant(OpBuilder &builder,
   OpBuilder::InsertionGuard guard(builder);
   builder.setInsertionPointToStart(module.getBody());
 
-  std::string nullTermStr = str.str();
-  nullTermStr.push_back('\0');
-  auto strType = fir::CharacterType::get(builder.getContext(), 1, nullTermStr.size());
-
+  // Type length = str.size(), StringAttr value = str.  Both match exactly.
+  auto strType = fir::CharacterType::get(builder.getContext(), 1, str.size());
   auto global = builder.create<fir::GlobalOp>(
       loc, symName, /*isConstant=*/true, /*isTarget=*/false,
-      strType, Attribute{}, builder.getStringAttr("internal"));
-
-  {
-    OpBuilder::InsertionGuard guard2(builder);
-    mlir::Block *block = builder.createBlock(&global.getRegion());
-    builder.setInsertionPointToEnd(block);
-
-    auto strAttr = builder.getStringAttr(nullTermStr);
-    auto sizeAttr = builder.getI64IntegerAttr(nullTermStr.size());
-    auto valTag = builder.getStringAttr(fir::StringLitOp::value());
-    auto sizeTag = builder.getStringAttr(fir::StringLitOp::size());
-
-    SmallVector<NamedAttribute> attrs = {
-        NamedAttribute(valTag, strAttr),
-        NamedAttribute(sizeTag, sizeAttr)};
-
-    auto stringLitOp = builder.create<fir::StringLitOp>(
-        loc, ArrayRef<Type>{strType}, std::nullopt, attrs);
-
-    builder.create<fir::HasValueOp>(loc, stringLitOp.getResult());
-  }
-
+      strType, builder.getStringAttr(str),
+      builder.getStringAttr("internal"));
+  (void)global;
   return FlatSymbolRefAttr::get(builder.getContext(), symName);
 }
 
@@ -182,13 +163,15 @@ struct HLFIRBoundsCheckPass
   //
   // Signature:
   //   void _FortranABoundsCheck(
-  //       int64_t index,      // the accessed index value
-  //       int64_t lowerBound, // valid lower bound for this dimension
-  //       int64_t upperBound, // valid upper bound for this dimension
-  //       int32_t dim,        // 1-based dimension number
-  //       const char *varName,  // NUL-terminated array variable name
-  //       const char *fileName, // NUL-terminated source file name
-  //       int32_t lineNumber  // source line number
+  //       int64_t index,        // the accessed index value
+  //       int64_t lowerBound,   // valid lower bound for this dimension
+  //       int64_t upperBound,   // valid upper bound for this dimension
+  //       int32_t dim,          // 1-based dimension number
+  //       const char *varName,  // array variable name (NOT NUL-terminated)
+  //       int64_t varNameLen,   // length of varName
+  //       const char *fileName, // source file name (NOT NUL-terminated)
+  //       int64_t fileNameLen,  // length of fileName
+  //       int32_t lineNumber    // source line number
   //   );
   //------------------------------------------------------------------------
   void declareRuntimeFunction(OpBuilder &builder, ModuleOp module) {
@@ -200,10 +183,9 @@ struct HLFIRBoundsCheckPass
     auto i32Ty = builder.getI32Type();
     auto charPtrTy = fir::ReferenceType::get(
         fir::CharacterType::get(ctx, 1, fir::CharacterType::unknownLen()));
-    auto voidTy = builder.getNoneType(); // represents void return in fir
 
     auto fnTy = builder.getFunctionType(
-        {i64Ty, i64Ty, i64Ty, i32Ty, charPtrTy, charPtrTy, i32Ty}, {});
+        {i64Ty, i64Ty, i64Ty, i32Ty, charPtrTy, i64Ty, charPtrTy, i64Ty, i32Ty}, {});
 
     OpBuilder::InsertionGuard guard(builder);
     builder.setInsertionPointToStart(module.getBody());
@@ -211,7 +193,6 @@ struct HLFIRBoundsCheckPass
         module.getLoc(), "_FortranABoundsCheck", fnTy);
     builder.insert(fn);
     fn.setPrivate();
-    (void)voidTy;
   }
 
   //------------------------------------------------------------------------
@@ -349,13 +330,13 @@ struct HLFIRBoundsCheckPass
           builder.create<fir::AddrOfOp>(loc,
               fir::ReferenceType::get(
                   fir::CharacterType::get(builder.getContext(), 1,
-                                          varName.size() + 1)),
+                                          varName.size())),
               varNameRef);
       Value filePtr =
           builder.create<fir::AddrOfOp>(loc,
               fir::ReferenceType::get(
                   fir::CharacterType::get(builder.getContext(), 1,
-                                          fileName.size() + 1)),
+                                          fileName.size())),
               fileNameRef);
 
       // Cast string pointers to the opaque char* the runtime expects.
@@ -365,13 +346,20 @@ struct HLFIRBoundsCheckPass
       Value varPtrCast  = builder.create<fir::ConvertOp>(loc, charPtrTy, varPtr);
       Value filePtrCast = builder.create<fir::ConvertOp>(loc, charPtrTy, filePtr);
 
+      // String lengths as i64 constants.
+      Value varNameLenVal =
+          builder.create<arith::ConstantIntOp>(loc, varName.size(), i64Ty);
+      Value fileNameLenVal =
+          builder.create<arith::ConstantIntOp>(loc, fileName.size(), i64Ty);
+
       builder.create<scf::IfOp>(loc, dimOOB,
           [&](OpBuilder &ifBuilder, Location ifLoc) {
             ifBuilder.create<func::CallOp>(
                 ifLoc, "_FortranABoundsCheck",
                 TypeRange{},
                 ValueRange{idx, lowerBound, upperBound, dimVal,
-                           varPtrCast, filePtrCast, lineVal});
+                           varPtrCast, varNameLenVal,
+                           filePtrCast, fileNameLenVal, lineVal});
             ifBuilder.create<scf::YieldOp>(ifLoc);
           });
     } // end for each dimension

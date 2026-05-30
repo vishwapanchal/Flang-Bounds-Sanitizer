@@ -13,6 +13,7 @@ program tc14_derived_type
   end type particle_t
 
   type(particle_t) :: p
+  integer :: bad_idx
 
   p%mass = 1.0d0
   p%position = 0.0d0
@@ -24,7 +25,8 @@ program tc14_derived_type
   p%position(3) = 30.0d0
 
   ! OOB: dimension 1 index 4 exceeds upper bound 3
-  p%position(4) = 40.0d0
+  bad_idx = 4
+  p%position(bad_idx) = 40.0d0
 
   print *, "ERROR: Sanitizer failed to intercept OOB access."
 end program tc14_derived_type

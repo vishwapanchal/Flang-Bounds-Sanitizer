@@ -1,7 +1,7 @@
 ! ==========================================================================
 ! TC-17: WHERE block with array access
 ! Category: WHERE construct
-! Expected: Bounds violation in WHERE body via assumed-shape
+! Expected: Bounds violation after WHERE block via direct scalar OOB
 ! ==========================================================================
 subroutine clamp_negatives(arr)
   implicit none
@@ -16,6 +16,7 @@ program tc17_where_block
   implicit none
   real :: data(10)
   real :: small(3)
+  integer :: bad_idx
 
   interface
     subroutine clamp_negatives(arr)
@@ -32,8 +33,9 @@ program tc17_where_block
   ! Pass a section that is valid
   call clamp_negatives(data(1:5))
 
-  ! Now access with scalar OOB through a different path
-  data(11) = 999.0
+  ! Now access with scalar OOB through a variable index
+  bad_idx = 11
+  data(bad_idx) = 999.0
 
   print *, "ERROR: Sanitizer failed to intercept OOB access."
 end program tc17_where_block

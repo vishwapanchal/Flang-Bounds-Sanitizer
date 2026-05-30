@@ -27,16 +27,19 @@ extern "C" {
 
 /// Runtime bounds-check function called by the HLFIR Instrumentation Pass.
 ///
-/// \param index      The accessed index value
-/// \param lowerBound Valid lower bound for this dimension
-/// \param upperBound Valid upper bound for this dimension
-/// \param dim        1-based dimension number
-/// \param varName    NUL-terminated array variable name
-/// \param fileName   NUL-terminated source file name
-/// \param lineNumber Source line number
+/// \param index       The accessed index value
+/// \param lowerBound  Valid lower bound for this dimension
+/// \param upperBound  Valid upper bound for this dimension
+/// \param dim         1-based dimension number
+/// \param varName     Array variable name (not NUL-terminated)
+/// \param varNameLen  Length of varName in bytes
+/// \param fileName    Source file name (not NUL-terminated)
+/// \param fileNameLen Length of fileName in bytes
+/// \param lineNumber  Source line number
 void _FortranABoundsCheck(int64_t index, int64_t lowerBound, int64_t upperBound,
-                          int32_t dim, const char *varName,
-                          const char *fileName, int32_t lineNumber);
+                          int32_t dim, const char *varName, int64_t varNameLen,
+                          const char *fileName, int64_t fileNameLen,
+                          int32_t lineNumber);
 
 } // extern "C"
 

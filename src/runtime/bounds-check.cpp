@@ -18,6 +18,7 @@
 #include "bounds-check.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 // The Terminator header location varies across LLVM versions.
 // LLVM 19+  : flang-rt/runtime/terminator.h
@@ -39,14 +40,32 @@
 extern "C" {
 
 void _FortranABoundsCheck(int64_t index, int64_t lowerBound, int64_t upperBound,
-                          int32_t dim, const char *varName,
-                          const char *fileName, int32_t lineNumber) {
+                          int32_t dim, const char *varName, int64_t varNameLen,
+                          const char *fileName, int64_t fileNameLen,
+                          int32_t lineNumber) {
   if (index >= lowerBound && index <= upperBound) {
     return; // Hot path: valid access, return immediately.
   }
 
-  const char *safeVarName = varName ? varName : "<unnamed>";
-  const char *safeFileName = fileName ? fileName : "<unknown>";
+  // Create NUL-terminated copies for safe use with printf/Terminator.
+  char safeVar[256];
+  char safeFile[512];
+
+  int vLen = (varNameLen > 0 && varNameLen < 255) ? (int)varNameLen : 0;
+  int fLen = (fileNameLen > 0 && fileNameLen < 511) ? (int)fileNameLen : 0;
+
+  if (vLen > 0 && varName) {
+    memcpy(safeVar, varName, vLen);
+  }
+  safeVar[vLen] = '\0';
+
+  if (fLen > 0 && fileName) {
+    memcpy(safeFile, fileName, fLen);
+  }
+  safeFile[fLen] = '\0';
+
+  const char *displayVar  = vLen > 0 ? safeVar  : "<unnamed>";
+  const char *displayFile = fLen > 0 ? safeFile : "<unknown>";
 
   fprintf(stderr,
           "\n\033[1;31m"
@@ -67,15 +86,15 @@ void _FortranABoundsCheck(int64_t index, int64_t lowerBound, int64_t upperBound,
           "\033[1;31m"
           "========================================================================"
           "\033[0m\n\n",
-          safeFileName, lineNumber, safeVarName, dim,
+          displayFile, lineNumber, displayVar, dim,
           (long long)index, (long long)lowerBound, (long long)upperBound);
 
 #if HAS_FLANG_TERMINATOR
-  Fortran::runtime::Terminator terminator{safeFileName, lineNumber};
+  Fortran::runtime::Terminator terminator{displayFile, lineNumber};
   terminator.Crash("Array bounds violation: index %lld is outside [%lld:%lld] "
                    "for dimension %d of '%s'",
                    (long long)index, (long long)lowerBound,
-                   (long long)upperBound, dim, safeVarName);
+                   (long long)upperBound, dim, displayVar);
 #else
   // Fallback when building outside the full Flang runtime tree.
   fprintf(stderr, "Program aborted due to array bounds violation.\n");

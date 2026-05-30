@@ -1,0 +1,23 @@
+# Build artifacts
+*.o
+*.mod
+*.exe
+*.out
+
+# LLVM build directories
+llvm-project/
+build/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug / temporary downloads
+*.zip

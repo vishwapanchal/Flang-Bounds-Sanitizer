@@ -6,6 +6,7 @@
 program tc12_high_rank
   implicit none
   real :: tensor(2, 2, 2, 2, 2, 2, 3)
+  integer :: bad_idx
 
   tensor = 0.0
 
@@ -13,7 +14,8 @@ program tc12_high_rank
   tensor(1, 1, 1, 1, 1, 1, 2) = 1.0
 
   ! OOB in dimension 7: index 4 exceeds upper bound 3
-  tensor(1, 1, 1, 1, 1, 1, 4) = 2.0
+  bad_idx = 4
+  tensor(1, 1, 1, 1, 1, 1, bad_idx) = 2.0
 
   print *, "ERROR: Sanitizer failed to intercept OOB access."
 end program tc12_high_rank

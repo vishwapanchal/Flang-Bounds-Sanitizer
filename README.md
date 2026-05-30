@@ -59,7 +59,7 @@ graph TD
 | Instrumentation Pass | `src/pass/BoundsCheckInstrumentation.cpp` | MLIR `PassWrapper` that walks `hlfir.designate` ops, extracts bounds from `hlfir.declare`, and injects `scf.if` + `func.call @_FortranABoundsCheck` |
 | Pass Header | `src/pass/BoundsCheckInstrumentation.h` | Public API: `fir::createHLFIRBoundsCheckPass()` |
 | Runtime Library | `src/runtime/bounds-check.cpp` | C runtime function that validates indices and emits ANSI-colored diagnostics via `Terminator::Crash()` |
-| Driver Patch | `src/driver/FlangDriverIntegration.patch` | Wires `-fcheck=bounds` through `CompilerInvocation.cpp` and registers the pass in `Pipelines.cpp` |
+| Driver Patch | `src/driver/FlangDriverIntegration.patch` | Wires the pass through `CompilerInvocation.cpp` and registers it in `Pipelines.cpp` |
 | Demo Program | `src/demo/demo.f90` | Self-demonstrating program that triggers an OOB access |
 | Dashboard | `dashboard/index.html` | Browser-based analytics dashboard |
 
@@ -217,15 +217,19 @@ For an existing LLVM/Flang checkout:
 The GitHub Actions workflow (`.github/workflows/build.yml`) performs:
 
 1. **Syntax Validation** — runs `gfortran -fsyntax-only` on all 22 test files
-2. **Full LLVM Build** — retrieves and extracts a pinned, compressed LLVM release tarball (`llvmorg-19.1.7`), injects the sanitizer, and builds with `ninja -j 2`
-3. **Runtime Verification** — compiles `demo.f90` with `-fcheck=bounds` and verifies the diagnostic appears on stderr
-4. **Artifact Upload** — uploads the compiled `flang-new` binary for 7 days
+2. **Full LLVM Build** — retrieves and extracts a pinned LLVM release tarball (`llvmorg-19.1.7`), injects the sanitizer source, and builds with `ninja` + `sccache` acceleration
+3. **Compiler Distribution** — packages and uploads the instrumented `flang-new` binary as a release artifact
+4. **Demo Verification** — compiles `demo.f90` and verifies the bounds-violation diagnostic appears on stderr
+5. **Full Test Suite** — compiles and runs all 22 test programs, verifying detection of every bounds violation category
+6. **Dashboard Deployment** — deploys the live analytics dashboard to GitHub Pages
 
-### Fast Build Caching Strategy (5–8 Minutes)
+### Build Caching Strategy
+
 To optimize build speed under the 10GB GitHub Actions cache limit:
-- **Pinned Source Tarball Caching**: Instead of a full git clone or caching the huge extracted folder, the workflow caches the **~158MB compressed release tarball** for `llvmorg-19.1.7`. This minimizes network/checkout overhead down to **~6 seconds** and uses negligible cache storage.
-- **Maximized ccache Budget**: Saving 98% of the repository's 10GB cache budget ensures that C++ compiled objects are never evicted. Subsequent builds hit the `ccache` and finish in **5 to 8 minutes** rather than the full 4-hour compilation.
-- **8GB Swap Space**: A swap space safety net prevents OOM errors on standard runner instances.
+- **Precompiled Flang Cache**: On cache hit, the full compiler rebuild is skipped entirely (~30s restore vs ~40min build)
+- **sccache Acceleration**: On cache miss, `sccache` caches individual object file compilations for faster subsequent builds
+- **Pinned Source Tarball**: The LLVM release tarball is cached to eliminate repeated 158MB downloads
+- **8GB Swap Space**: A swap space safety net prevents OOM errors on standard runner instances
 
 ---
 
