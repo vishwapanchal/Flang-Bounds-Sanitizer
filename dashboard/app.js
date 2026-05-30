@@ -169,29 +169,7 @@
     function renderTerminal() {
         const body = document.getElementById('terminal-body');
         body.innerHTML =
-`<span class="term-dim">$ ./demo_run</span>
-<span class="term-dim">=========================================================</span>
-<span class="term-dim">   FLANG HLFIR BOUNDS SANITIZER - SELF DEMONSTRATION</span>
-<span class="term-dim">=========================================================</span>
-<span class="term-dim"> [*] Allocating 2D array A(5, 5)...</span>
-<span class="term-dim"> [*] Accessing valid indices (1..5)...</span>
-<span class="term-green"> [*] Valid accesses completed successfully.</span>
-<span class="term-dim"> ---------------------------------------------------------</span>
-<span class="term-yellow"> [!] Now attempting to access OUT-OF-BOUNDS index A(6, 3)...</span>
-
-<span class="term-red">========================================================================</span>
-<span class="term-red">                  HLFIR BOUNDS VIOLATION DETECTED                       </span>
-<span class="term-red">========================================================================</span>
-
-<span class="term-bold">  File:      </span> <span class="term-blue">src/demo/demo.f90</span>
-<span class="term-bold">  Line:      </span> <span class="term-yellow">36</span>
-<span class="term-bold">  Variable:  </span> <span class="term-cyan">_QFbounds_demoEa</span>
-<span class="term-bold">  Dimension: </span> <span class="term-magenta">1</span>
-<span class="term-bold">  Access:    </span> <span class="term-red">6</span> (Valid Range: [<span class="term-green">1</span>:<span class="term-green">5</span>])
-
-<span class="term-red">========================================================================</span>
-
-<span class="term-dim">Fortran runtime: Array bounds violation: index 6 is outside [1:5] for dimension 1 of '_QFbounds_demoEa'</span>`;
+`<span class="term-dim">Select a test case from the table above to view its specific runtime diagnostic output.</span>`;
     }
 
     // ---------------------------------------------------------------
