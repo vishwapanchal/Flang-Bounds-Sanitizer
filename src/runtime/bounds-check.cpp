@@ -42,11 +42,6 @@ extern "C" {
 void _FortranABoundsCheck(int64_t index, int64_t lowerBound, int64_t upperBound,
                           int32_t dim, const char *varName, int64_t varNameLen,
                           const char *fileName, int64_t fileNameLen,
-                          int32_t lineNumber) {
-  // DEBUG
-  fprintf(stderr, "DEBUG: _FortranABoundsCheck(index=%lld, lowerBound=%lld, upperBound=%lld, dim=%d)\n",
-          (long long)index, (long long)lowerBound, (long long)upperBound, dim);
-
   if (index >= lowerBound && index <= upperBound) {
     return; // Hot path: valid access, return immediately.
   }
