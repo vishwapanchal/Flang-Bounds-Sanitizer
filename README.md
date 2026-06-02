@@ -31,9 +31,9 @@ This sanitizer operates at the HLFIR dialect level within the Flang compiler pip
 Fortran Source → Flang Frontend → HLFIR Construction
                                         ↓
                               ┌─────────────────────┐
-                              │  Bounds Check Pass   │  ← Our instrumentation
-                              │  (hlfir.designate    │
-                              │   → scf.if guard)    │
+                              │  Bounds Check Pass  │  ← Our instrumentation
+                              │  (hlfir.designate   │
+                              │   → scf.if guard)   │
                               └─────────────────────┘
                                         ↓
                               HLFIR-to-FIR Lowering → LLVM IR → Binary
