@@ -2,6 +2,9 @@
 
 [![Build & Verify](https://github.com/vishwapanchal/Flang-Bounds-Sanitizer/actions/workflows/build.yml/badge.svg)](https://github.com/vishwapanchal/Flang-Bounds-Sanitizer/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0_with_LLVM-blue.svg)](https://llvm.org/LICENSE.txt)
+[![Live Dashboard](https://img.shields.io/badge/Live_Dashboard-GitHub_Pages-brightgreen?logo=github)](https://vishwapanchal.github.io/Flang-Bounds-Sanitizer)
+
+> **📊 [View the Live Analytics Dashboard →](https://vishwapanchal.github.io/Flang-Bounds-Sanitizer)**
 
 A compile-time instrumentation pass for the LLVM/Flang Fortran compiler that inserts runtime array bounds checks at the HLFIR (High-Level Fortran IR) level — where full Fortran semantic metadata is still available.
 
@@ -134,36 +137,58 @@ bash run_benchmarks.sh /path/to/flang-new
 
 ---
 
-## How to Build
+## Quick Start
 
-### Option A: Docker (Recommended)
+### Option A: Docker — One-Click Build & Run (Recommended)
 
 Requires Docker with BuildKit enabled. Optimized for 8GB RAM systems.
 
 ```bash
+git clone https://github.com/vishwapanchal/Flang-Bounds-Sanitizer.git
+cd Flang-Bounds-Sanitizer
+
 export DOCKER_BUILDKIT=1
 bash run.sh
 ```
 
-The build uses `ninja -j 2` and `LLVM_PARALLEL_LINK_JOBS=1` to avoid OOM on memory-constrained systems.  BuildKit cache mounts preserve ccache state across builds — if the build is interrupted, rerunning `run.sh` resumes from the last compiled object.
+`run.sh` will:
+1. Build the entire LLVM/Flang compiler with the bounds sanitizer injected (cached via BuildKit)
+2. Compile and run `src/demo/demo.f90` — you'll see a **HLFIR BOUNDS VIOLATION DETECTED** diagnostic on stderr
+
+If the build is interrupted, simply re-run `bash run.sh` — BuildKit caching resumes from the last compiled object.
 
 ### Option B: Google Colab
 
 Open a Colab notebook with a GPU runtime (provides ~12.7GB RAM), then:
 
 ```bash
+# 1. Clone project and LLVM source
 !git clone https://github.com/vishwapanchal/Flang-Bounds-Sanitizer.git project
 !git clone -b llvmorg-19.1.7 --depth 1 https://github.com/llvm/llvm-project.git
 !apt-get install -y cmake ninja-build clang lld ccache
 
-# Inject project files (same steps as Dockerfile RUN block)
-# Configure with MinSizeRel, -j 2, PARALLEL_LINK_JOBS=1
-# Build: ninja -j 2 flang-new
+# 2. Inject sanitizer into LLVM tree (same steps as Dockerfile RUN block)
+!cp project/src/pass/BoundsCheckInstrumentation.cpp llvm-project/flang/lib/Optimizer/Transforms/
+!cp project/src/pass/BoundsCheckInstrumentation.h llvm-project/flang/include/flang/Optimizer/Transforms/
+!cp project/src/runtime/bounds-check.cpp llvm-project/flang-rt/lib/runtime/
+!cp project/src/runtime/bounds-check.h llvm-project/flang-rt/lib/runtime/
+# ... (register files in CMakeLists.txt and patch CLOptions.inc — see Dockerfile for full steps)
+
+# 3. Configure and build
+!cd llvm-project && mkdir -p build && cd build && cmake -G Ninja ../llvm \
+    -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS="clang;flang;mlir" \
+    -DLLVM_TARGETS_TO_BUILD="X86" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+    -DLLVM_USE_LINKER=lld -DBUILD_SHARED_LIBS=ON -DLLVM_PARALLEL_LINK_JOBS=1
+!cd llvm-project/build && ninja -j 2 flang-new
+
+# 4. Compile and run the demo
+!llvm-project/build/bin/flang-new -O2 project/src/demo/demo.f90 -o demo_run
+!./demo_run
 ```
 
 ### Option C: Manual Integration
 
-For an existing LLVM/Flang checkout:
+For an existing LLVM/Flang checkout (v19.1.7):
 
 1. Copy `src/pass/BoundsCheckInstrumentation.cpp` to `flang/lib/Optimizer/Transforms/`
 2. Copy `src/pass/BoundsCheckInstrumentation.h` to `flang/include/flang/Optimizer/Transforms/`
@@ -172,6 +197,35 @@ For an existing LLVM/Flang checkout:
 5. Add `bounds-check.cpp` to the runtime's `CMakeLists.txt`
 6. Apply the pipeline patch (or manually add the include + `pm.addPass` call)
 7. Rebuild: `ninja -j $(nproc) flang-new`
+
+### Running the Demo
+
+Once the instrumented `flang-new` is built (via any option above):
+
+```bash
+# Compile a Fortran program with the bounds sanitizer
+flang-new -O2 src/demo/demo.f90 -o demo_run
+
+# Run it — the OOB access will be caught at runtime
+./demo_run
+```
+
+### Running the Test Suite
+
+```bash
+# Compile and run all 22 test cases individually
+for f in src/tests/tc*.f90; do
+    flang-new -O2 "$f" -o test_run && ./test_run 2>&1
+    rm -f test_run
+done
+```
+
+### Running the Benchmarks
+
+```bash
+cd src/benchmark
+bash run_benchmarks.sh /path/to/flang-new
+```
 
 ---
 
